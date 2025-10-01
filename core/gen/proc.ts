@@ -46,11 +46,12 @@ export function createGenService(deps: GenServiceDeps): GenService {
         basePrompt = `${basePrompt}, ${params.customPrompt}`
       }
 
-      // 3. Build 9 emotion prompts
+      // 3. Build 9 emotion prompts + 7 surprise prompts
       const emotionPromptArray = deps.promptBuilder.buildAllEmotions(basePrompt)
+      const surprisePromptArray = deps.promptBuilder.buildAllSurprises(basePrompt)
 
-      // 4. Create 9 Image records (pending)
-      const imageRecordArray = emotionPromptArray.map((ep, idx) => {
+      // 4. Create 9 emotion Image records (pending)
+      const emotionImageRecordArray = emotionPromptArray.map((ep, idx) => {
         const imageId = crypto.randomUUID()
         const imageSeed = seed + idx
 
@@ -69,10 +70,33 @@ export function createGenService(deps: GenServiceDeps): GenService {
         return { imageId, prompt: ep.prompt, seed: imageSeed }
       })
 
-      // 5. Start async generation (don't await)
+      // 5. Create 7 surprise Image records (pending)
+      const surpriseImageRecordArray = surprisePromptArray.map((sp, idx) => {
+        const imageId = crypto.randomUUID()
+        const imageSeed = seed + 2000 + idx // Different seed range (avoid retry collision)
+
+        deps.db.createImage({
+          id: imageId,
+          projectId,
+          category: 'surprise',
+          emotionType: null,
+          surpriseIndex: sp.surpriseIndex,
+          prompt: sp.prompt,
+          seed: imageSeed,
+          filePath: `data/images/${projectId}/${imageId}.png`,
+          status: 'pending'
+        })
+
+        return { imageId, prompt: sp.prompt, seed: imageSeed }
+      })
+
+      // 6. Combine all image records
+      const imageRecordArray = [...emotionImageRecordArray, ...surpriseImageRecordArray]
+
+      // 7. Start async generation (don't await)
       generateAsync(projectId, imageRecordArray, deps)
 
-      // 6. Return projectId immediately
+      // 8. Return projectId immediately
       return projectId
     }
   }

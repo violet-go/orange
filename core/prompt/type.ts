@@ -5,6 +5,13 @@ export interface PromptBuilder {
   }): string
 
   buildAllEmotions(basePrompt: string): EmotionPrompt[]
+
+  buildSurprise(params: {
+    basePrompt: string
+    surpriseIndex: number
+  }): string
+
+  buildAllSurprises(basePrompt: string): SurprisePrompt[]
 }
 
 export type EmotionType =
@@ -20,5 +27,10 @@ export type EmotionType =
 
 export interface EmotionPrompt {
   emotionType: EmotionType
+  prompt: string
+}
+
+export interface SurprisePrompt {
+  surpriseIndex: number
   prompt: string
 }

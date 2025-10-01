@@ -115,15 +115,17 @@ test('Retry logic uses different seed', async () => {
     seed: 12345
   })
 
-  await sleep(300)
+  await sleep(500)
 
   // ✓ Should have retried the first failed image
-  // We generate 9 images with seeds: 12345, 12346, 12347, ..., 12353
+  // We generate 16 images (9 emotions + 7 surprises):
+  // Emotions: 12345, 12346, ..., 12353
+  // Surprises: 14345, 14346, ..., 14351
   // First one (12345) fails and retries with 12345+1000 = 13345
-  // So we should have: 12345 (fail), 12346, 12347, ..., 12353, 13345 (retry)
-  expect(capturedSeedArray.length).toBe(10) // 9 original + 1 retry
+  // So we should have: 12345 (fail), then 15 success + 1 retry = 17 total
+  expect(capturedSeedArray.length).toBe(17) // 16 original + 1 retry
   expect(capturedSeedArray[0]).toBe(12345) // First attempt
-  expect(capturedSeedArray[9]).toBe(12345 + 1000) // Retry with +1000
+  expect(capturedSeedArray[16]).toBe(12345 + 1000) // Retry with +1000
 
   db.close()
   rmSync('./test-data-retry2', { recursive: true, force: true })

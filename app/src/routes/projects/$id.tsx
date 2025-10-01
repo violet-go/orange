@@ -148,6 +148,8 @@ function ProjectDetailPage() {
     setIsDownloading(true)
 
     try {
+      // If frame is applied, we need to export canvas content
+      // For now, still download original URLs - canvas export will be handled by individual ImageCard
       const imagesToDownload = project.images
         .filter((img) => img.status === 'SUCCESS' && img.fileUrl)
         .map((img) => ({
@@ -643,18 +645,37 @@ function ImageCard({
   const handleDownload = async () => {
     if (!image.fileUrl) return
 
+    const filename = image.category === 'EMOTION'
+      ? `emotion-${image.emotionType}.png`
+      : `surprise-${String(image.surpriseIndex).padStart(2, '0')}.png`
+
     try {
-      const response = await fetch(image.fileUrl)
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const filename = image.category === 'EMOTION'
-        ? `emotion-${image.emotionType}.png`
-        : `surprise-${String(image.surpriseIndex).padStart(2, '0')}.png`
-      a.download = filename
-      a.click()
-      URL.revokeObjectURL(url)
+      // If frame is applied and canvas is available, export from canvas
+      if (frameStyle !== 'none' && imageData && canvasRef[0]) {
+        canvasRef[0].toBlob((blob) => {
+          if (!blob) {
+            alert('导出失败，请重试')
+            return
+          }
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          a.click()
+          URL.revokeObjectURL(url)
+        }, 'image/png')
+      } else {
+        // Otherwise download from original URL
+        const response = await fetch(image.fileUrl)
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      }
     } catch (error) {
       console.error('Download failed:', error)
       alert('下载失败，请重试')

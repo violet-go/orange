@@ -45,7 +45,7 @@ test('GenService returns projectId immediately', async () => {
   rmSync('./test-data-gen', { recursive: true, force: true })
 })
 
-test('GenService creates Project and 9 Image records', async () => {
+test('GenService creates Project and 16 Image records (9 emotions + 7 surprises)', async () => {
   const logger = createLogger({ level: 'error' })
   const db = createDatabase({ path: ':memory:', logger })
   const storage = createStorage({ basePath: './test-data-gen2' })
@@ -75,19 +75,26 @@ test('GenService creates Project and 9 Image records', async () => {
   expect(project?.inputContent).toBe('a cute cat girl')
   expect(['pending', 'generating']).toContain(project?.status)
 
-  // ✓ Database should have 9 Image records
+  // ✓ Database should have 16 Image records (9 emotions + 7 surprises)
   const imageArray = db.getImagesByProject(projectId)
-  expect(imageArray.length).toBe(9)
-  expect(imageArray.every(img => img.category === 'emotion')).toBe(true)
+  expect(imageArray.length).toBe(16)
 
-  // ✓ Verify 9 emotion types
-  const emotionTypeArray = imageArray.map(img => img.emotionType).sort()
+  // ✓ Verify 9 emotion images
+  const emotionImageArray = imageArray.filter(img => img.category === 'emotion')
+  expect(emotionImageArray.length).toBe(9)
+  const emotionTypeArray = emotionImageArray.map(img => img.emotionType).sort()
   expect(emotionTypeArray).toEqual([
     'angry', 'happy', 'love', 'proud', 'sad', 'shy', 'surprised', 'thinking', 'tired'
   ])
 
+  // ✓ Verify 7 surprise images
+  const surpriseImageArray = imageArray.filter(img => img.category === 'surprise')
+  expect(surpriseImageArray.length).toBe(7)
+  const surpriseIndexArray = surpriseImageArray.map(img => img.surpriseIndex).sort()
+  expect(surpriseIndexArray).toEqual([0, 1, 2, 3, 4, 5, 6])
+
   // Wait for background generation to finish before cleanup
-  await sleep(600)
+  await sleep(800)
 
   db.close()
   rmSync('./test-data-gen2', { recursive: true, force: true })

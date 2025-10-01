@@ -56,11 +56,49 @@ code {
   }
 }
 
+/* Remove default focus outlines - we'll use custom focus styles */
+*:focus,
+*:focus-visible {
+  outline: none !important;
+}
+
+/* Custom focus ring for accessibility */
+*:focus-visible {
+  @apply ring-2 ring-violet-500/50 ring-offset-2 ring-offset-white;
+}
+
 /* Smooth transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
+}
+
+/* Premium animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(124, 58, 237, 0.6);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
 }
 
 /* Mobile optimization */

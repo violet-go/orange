@@ -82,33 +82,57 @@ function StyleCard({
     <Card
       isPressable
       onPress={onSelect}
-      className={`transition-all duration-200 ${
+      className={`group relative overflow-hidden transition-all duration-300 border-0 ${
         isSelected
-          ? 'border-4 border-primary shadow-lg scale-105'
-          : 'border-2 border-gray-200 hover:border-gray-300'
+          ? 'shadow-2xl shadow-violet-500/30 ring-2 ring-violet-500 scale-[1.02]'
+          : 'shadow-md hover:shadow-xl hover:scale-[1.02]'
       }`}
     >
-      <CardBody className="p-4">
-        {thumbnailUrl && (
-          <img
-            src={thumbnailUrl}
-            alt={displayName}
-            className="w-full aspect-square object-cover rounded-lg mb-3"
-          />
-        )}
-        <h3 className="font-semibold text-gray-900 mb-1">{displayName}</h3>
-        <p className="text-sm text-gray-500 line-clamp-2">{description}</p>
+      <CardBody className="p-0 relative">
+        {/* Thumbnail or Placeholder */}
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-violet-50 to-purple-50">
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt={displayName}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-6xl opacity-50">🎨</div>
+            </div>
+          )}
+
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Selected checkmark */}
+          {isSelected && (
+            <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center shadow-lg animate-scale-in">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 bg-white">
+          <h3 className={`font-semibold mb-1 transition-colors ${
+            isSelected ? 'text-violet-600' : 'text-gray-900'
+          }`}>
+            {displayName}
+          </h3>
+          <p className="text-sm text-gray-500 line-clamp-2">{description}</p>
+        </div>
+
+        {/* Selected border glow */}
         {isSelected && (
-          <div className="mt-2 flex items-center text-primary">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-xs font-medium">已选择</span>
-          </div>
+          <div className="absolute inset-0 rounded-xl border-2 border-violet-500 pointer-events-none animate-glow" />
         )}
       </CardBody>
     </Card>

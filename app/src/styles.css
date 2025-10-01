@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+body {
+  @apply m-0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  /* Surprise row horizontal scroll */
+  .surprise-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.75rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .surprise-row > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: 80px;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .surprise-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Header optimization */
+  header nav {
+    gap: 1rem;
+  }
+
+  /* Button sizing for touch */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Lightbox mobile optimization */
+  .lightbox-image {
+    max-width: 95vw;
+    max-height: 80vh;
+  }
+
+  /* Form inputs - prevent zoom on iOS */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Touch gestures */
+.swipeable {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}

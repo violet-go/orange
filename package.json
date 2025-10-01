@@ -1,0 +1,24 @@
+{
+  "name": "orange",
+  "version": "0.1.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run index.ts",
+    "test": "bun test",
+    "test:phase1": "bun test test/phase1.test.ts",
+    "test:watch": "bun test --watch"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0",
+    "graphql-yoga": "^5.16.0",
+    "hono": "^4.9.9"
+  }
+}

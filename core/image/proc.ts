@@ -66,7 +66,7 @@ export function createRealImageGen(config: RealImageGenConfig): ImageGen {
       const width = params.width || 512
       const height = params.height || 512
 
-      logger.debug('Calling Google Nano Banana API', {
+      logger.debug('Calling Gemini 2.5 Flash Image Preview API', {
         prompt: params.prompt,
         seed,
         width,
@@ -74,62 +74,81 @@ export function createRealImageGen(config: RealImageGenConfig): ImageGen {
       })
 
       try {
-        // Step 1: Call Google Nano Banana API
-        const response = await fetch(`${baseUrl}/generate`, {
+        // Step 1: Call Gemini API
+        // Endpoint: /v1beta/models/gemini-2.5-flash-image-preview:generateContent
+        const response = await fetch(`${baseUrl}/v1beta/models/gemini-2.5-flash-image-preview:generateContent`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'x-goog-api-key': apiKey,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            prompt: params.prompt,
-            seed,
-            width,
-            height
+            contents: [{
+              parts: [
+                { text: params.prompt }
+              ]
+            }]
           })
         })
 
         // Step 2: Error handling
         if (!response.ok) {
           const errorText = await response.text()
-          logger.error('API request failed', {
+          logger.error('Gemini API request failed', {
             status: response.status,
             statusText: response.statusText,
             error: errorText
           })
-          throw new Error(`API error: ${response.status} - ${response.statusText}`)
+          throw new Error(`Gemini API error: ${response.status} - ${response.statusText}`)
         }
 
         // Step 3: Parse response
         const data = await response.json()
-        logger.debug('API response received', { data })
+        logger.debug('Gemini API response received', {
+          hasCandidates: !!data.candidates,
+          candidatesCount: data.candidates?.length
+        })
 
-        // Step 4: Download image
-        const imageResponse = await fetch(data.imageUrl)
-        if (!imageResponse.ok) {
-          logger.error('Image download failed', {
-            status: imageResponse.status,
-            imageUrl: data.imageUrl
-          })
-          throw new Error(`Image download failed: ${imageResponse.status}`)
+        // Step 4: Extract base64 image data
+        if (!data.candidates || data.candidates.length === 0) {
+          logger.error('No candidates in response', { data })
+          throw new Error('No image generated - empty candidates array')
         }
 
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
+        const candidate = data.candidates[0]
+        if (!candidate.content || !candidate.content.parts) {
+          logger.error('Invalid candidate structure', { candidate })
+          throw new Error('Invalid response structure - missing content.parts')
+        }
+
+        // Find the part with inlineData
+        const imagePart = candidate.content.parts.find((part: any) => part.inlineData)
+        if (!imagePart || !imagePart.inlineData || !imagePart.inlineData.data) {
+          logger.error('No inlineData found in response', { parts: candidate.content.parts })
+          throw new Error('No image data in response')
+        }
+
+        // Step 5: Decode base64 to Buffer
+        const base64Data = imagePart.inlineData.data
+        const imageBuffer = Buffer.from(base64Data, 'base64')
+        const mimeType = imagePart.inlineData.mimeType || 'image/png'
 
         logger.info('Image generated successfully', {
           prompt: params.prompt,
           seed,
-          bufferSize: imageBuffer.length
+          bufferSize: imageBuffer.length,
+          mimeType
         })
 
         return {
           imageBuffer,
-          width: data.width || width,
-          height: data.height || height,
+          width: width,  // Gemini doesn't return dimensions, use requested
+          height: height,
           metadata: {
-            modelVersion: data.version || 'unknown',
+            modelVersion: 'gemini-2.5-flash-image-preview',
             seed,
-            apiProvider: 'google-nano-banana'
+            apiProvider: 'google-gemini',
+            mimeType
           }
         }
       } catch (error) {

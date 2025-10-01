@@ -200,184 +200,255 @@ function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-violet-50/50 via-purple-50/30 to-pink-50/50">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-violet-400/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-400/10 rounded-full blur-3xl" />
+
+      <main className="relative max-w-7xl mx-auto px-4 py-12">
         {isGenerating && (
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-4">正在生成贴纸包...</h1>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>生成进度</span>
-                <span className="font-medium">
-                  {completedCount}/{totalCount} 张完成
-                </span>
-              </div>
-              <Progress
-                value={progressValue}
-                color="primary"
-                className="max-w-full"
-              />
-              <p className="text-sm text-gray-500 text-center">
-                请等待，正在生成中...
-              </p>
-              {progress && (
-                <div className="text-xs text-gray-400 text-center mt-1">
-                  最新更新：{new Date(progress.timestamp).toLocaleTimeString()}
+          <Card className="mb-8 glass-card border-0 shadow-xl animate-fade-in">
+            <CardBody className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse">
+                    <span className="text-white text-2xl">✨</span>
+                  </div>
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                    AI 创作中...
+                  </h1>
+                  <p className="text-gray-600 text-sm mt-1">魔法正在发生，请稍候</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">生成进度</span>
+                  <span className="text-sm font-bold text-violet-600">
+                    {completedCount}/{totalCount} 张完成
+                  </span>
+                </div>
+                <Progress
+                  value={progressValue}
+                  color="primary"
+                  size="lg"
+                  className="max-w-full"
+                  classNames={{
+                    indicator: "bg-gradient-to-r from-violet-500 to-purple-600",
+                  }}
+                />
+                {progress && (
+                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500 pt-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span>实时同步 · 最新更新：{new Date(progress.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                )}
+              </div>
+            </CardBody>
+          </Card>
         )}
 
         {isCompleted && (
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-green-600 mb-4">
-              贴纸包已完成 🎉
-            </h1>
+          <div className="mb-8 space-y-6 animate-fade-in">
+            {/* Success Header */}
+            <Card className="glass-card border-0 shadow-xl overflow-hidden">
+              <CardBody className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-3xl">🎉</span>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                      创作完成！
+                    </h1>
+                    <p className="text-gray-600 text-sm mt-1">你的专属表情包已经准备好了</p>
+                  </div>
+                </div>
 
-            <div className="flex gap-4 mb-4 flex-wrap">
-              {/* Remix button */}
-              <Button
-                color="secondary"
-                size="lg"
-                onPress={() => {
-                  navigate({
-                    to: '/',
-                    search: {
-                      remix: id,
-                      description: project.inputContent,
-                      styleId: project.style?.id || null,
-                    },
-                  })
-                }}
-              >
-                🔄 Remix 这个项目
-              </Button>
+                {/* Action Buttons */}
+                <div className="flex gap-3 flex-wrap">
+                  <Button
+                    color="secondary"
+                    size="lg"
+                    className="shadow-lg hover:shadow-xl transition-shadow"
+                    onPress={() => {
+                      navigate({
+                        to: '/',
+                        search: {
+                          remix: id,
+                          description: project.inputContent,
+                          styleId: project.style?.id || null,
+                        },
+                      })
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🔄</span>
+                      <span>Remix 这个项目</span>
+                    </span>
+                  </Button>
 
-              {/* Share button */}
-              <Button color="secondary" size="lg" onPress={handleShare}>
-                🔗 分享
-              </Button>
+                  <Button
+                    color="secondary"
+                    size="lg"
+                    variant="flat"
+                    onPress={handleShare}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🔗</span>
+                      <span>分享作品</span>
+                    </span>
+                  </Button>
 
-              {/* Download all button */}
-              <Button
-                onClick={handleDownloadAll}
-                isLoading={isDownloading}
-                size="lg"
-                color="primary"
-              >
-                {isDownloading
-                  ? `打包中 ${downloadProgress.current}/${downloadProgress.total}`
-                  : '下载全部 ZIP'}
-              </Button>
-            </div>
+                  <Button
+                    onClick={handleDownloadAll}
+                    isLoading={isDownloading}
+                    size="lg"
+                    color="primary"
+                    className="shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 transition-all"
+                  >
+                    {isDownloading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        打包中 {downloadProgress.current}/{downloadProgress.total}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span>📦</span>
+                        <span>下载全部 ZIP</span>
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
 
-            {/* Frame style selector */}
-            <div className="mb-4">
-              <div className="flex gap-2 flex-wrap mb-4">
-                <span className="text-sm text-gray-600 py-2">相框样式：</span>
-                <Button
-                  size="sm"
-                  color={frameStyle === 'none' ? 'primary' : 'default'}
-                  onPress={() => setFrameStyle('none')}
-                >
-                  无边框
-                </Button>
-                <Button
-                  size="sm"
-                  color={frameStyle === 'white-border' ? 'primary' : 'default'}
-                  onPress={() => setFrameStyle('white-border')}
-                >
-                  白色描边
-                </Button>
-                <Button
-                  size="sm"
-                  color={frameStyle === 'rounded' ? 'primary' : 'default'}
-                  onPress={() => setFrameStyle('rounded')}
-                >
-                  圆角
-                </Button>
-                <Button
-                  size="sm"
-                  color={frameStyle === 'polaroid' ? 'primary' : 'default'}
-                  onPress={() => setFrameStyle('polaroid')}
-                >
-                  宝丽来
-                </Button>
-                <Button
-                  size="sm"
-                  color={frameStyle === 'custom' ? 'primary' : 'default'}
-                  onPress={() => setFrameStyle('custom')}
-                >
-                  自定义
-                </Button>
-              </div>
+            {/* Frame Style Selector */}
+            <Card className="glass-card border-0 shadow-lg">
+              <CardBody className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                    <span className="text-white text-lg">🖼️</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">相框样式</h3>
+                </div>
 
-              {/* Advanced Frame Editor */}
-              {frameStyle === 'custom' && (
-                <AdvancedFrameEditor
-                  config={frameConfig}
-                  onChange={setFrameConfig}
-                />
-              )}
-            </div>
+                <div className="flex gap-2 flex-wrap mb-4">
+                  {[
+                    { id: 'none', label: '无边框', icon: '⭕' },
+                    { id: 'white-border', label: '白色描边', icon: '⬜' },
+                    { id: 'rounded', label: '圆角', icon: '🔲' },
+                    { id: 'polaroid', label: '宝丽来', icon: '📸' },
+                    { id: 'custom', label: '自定义', icon: '⚙️' },
+                  ].map((style) => (
+                    <Button
+                      key={style.id}
+                      size="sm"
+                      variant={frameStyle === style.id ? 'solid' : 'flat'}
+                      color={frameStyle === style.id ? 'primary' : 'default'}
+                      onPress={() => setFrameStyle(style.id as FrameStyle)}
+                      className="transition-all"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>{style.icon}</span>
+                        <span>{style.label}</span>
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Advanced Frame Editor */}
+                {frameStyle === 'custom' && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <AdvancedFrameEditor
+                      config={frameConfig}
+                      onChange={setFrameConfig}
+                    />
+                  </div>
+                )}
+              </CardBody>
+            </Card>
           </div>
         )}
 
         <div className="space-y-8">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">九宫格情绪表情：</h2>
-            {failedImageArray.length > 0 && (
-              <Button
-                color="warning"
-                size="sm"
-                className="mb-4"
-                onPress={async () => {
-                  const queryClient = useQueryClient()
-                  await Promise.all(
-                    failedImageArray.map((img) =>
-                      graphqlClient.request(RETRY_IMAGE_MUTATION, { id: img.id })
-                    )
-                  )
-                  queryClient.invalidateQueries(['project', id])
-                }}
-              >
-                重试全部失败 ({failedImageArray.length})
-              </Button>
-            )}
+          {/* Emotion Images Section */}
+          <Card className="glass-card border-0 shadow-lg">
+            <CardBody className="p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl">😊</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">九宫格情绪表情</h2>
+                </div>
+                {failedImageArray.length > 0 && (
+                  <Button
+                    color="warning"
+                    size="sm"
+                    variant="flat"
+                    onPress={async () => {
+                      const queryClient = useQueryClient()
+                      await Promise.all(
+                        failedImageArray.map((img) =>
+                          graphqlClient.request(RETRY_IMAGE_MUTATION, { id: img.id })
+                        )
+                      )
+                      queryClient.invalidateQueries(['project', id])
+                    }}
+                  >
+                    🔄 重试失败 ({failedImageArray.length})
+                  </Button>
+                )}
+              </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              {emotionImageArray.map((image) => (
-                <ImageCard
-                  key={image.id}
-                  image={image}
-                  frameStyle={frameStyle}
-                  frameConfig={frameConfig}
-                  projectId={id}
-                  onPress={() => image.status === 'success' && setSelectedImageId(image.id)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Surprise images - Phase 2 新增 */}
-          {surpriseImageArray.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">意外表情：</h2>
-              <div className="grid grid-cols-7 gap-3 md:grid-cols-7 overflow-x-auto surprise-row">
-                {surpriseImageArray.map((image) => (
+              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                {emotionImageArray.map((image) => (
                   <ImageCard
                     key={image.id}
                     image={image}
                     frameStyle={frameStyle}
                     frameConfig={frameConfig}
                     projectId={id}
-                    compact
                     onPress={() => image.status === 'success' && setSelectedImageId(image.id)}
                   />
                 ))}
               </div>
-            </div>
+            </CardBody>
+          </Card>
+
+          {/* Surprise images - Phase 2 */}
+          {surpriseImageArray.length > 0 && (
+            <Card className="glass-card border-0 shadow-lg">
+              <CardBody className="p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xl">✨</span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">意外惊喜表情</h2>
+                </div>
+
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 sm:gap-4 overflow-x-auto surprise-row">
+                  {surpriseImageArray.map((image) => (
+                    <ImageCard
+                      key={image.id}
+                      image={image}
+                      frameStyle={frameStyle}
+                      frameConfig={frameConfig}
+                      projectId={id}
+                      compact
+                      onPress={() => image.status === 'success' && setSelectedImageId(image.id)}
+                    />
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
           )}
         </div>
 
@@ -592,11 +663,11 @@ function ImageCard({
 
   if (image.status === 'pending') {
     return (
-      <Card className="aspect-square">
-        <CardBody className="flex items-center justify-center bg-gray-50">
+      <Card className="aspect-square border-0 shadow-md">
+        <CardBody className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
           <div className="text-gray-400 text-center">
             <svg
-              className="w-12 h-12 mx-auto mb-2"
+              className="w-12 h-12 mx-auto mb-2 animate-pulse"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -608,7 +679,7 @@ function ImageCard({
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-sm">等待中</p>
+            <p className="text-sm font-medium">等待中...</p>
           </div>
         </CardBody>
       </Card>
@@ -617,8 +688,12 @@ function ImageCard({
 
   if (image.status === 'generating') {
     return (
-      <Card className="aspect-square">
-        <CardBody className="flex items-center justify-center bg-gray-50">
+      <Card className="aspect-square border-0 shadow-md overflow-hidden">
+        <CardBody className="flex items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50 relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 2s infinite',
+          }} />
           <Spinner size="lg" color="primary" />
         </CardBody>
       </Card>
@@ -627,21 +702,26 @@ function ImageCard({
 
   if (image.status === 'failed') {
     return (
-      <Card className="aspect-square border-red-200">
-        <CardBody className="flex flex-col items-center justify-center bg-red-50 p-4">
-          <p className="text-red-600 text-sm mb-2 text-center">生成失败</p>
+      <Card className="aspect-square border-2 border-red-200 shadow-md">
+        <CardBody className="flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-rose-50 p-4">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
+            <span className="text-red-500 text-2xl">⚠️</span>
+          </div>
+          <p className="text-red-600 text-sm font-semibold mb-2 text-center">生成失败</p>
           {image.errorMessage && (
-            <p className="text-xs text-red-500 mb-3 text-center">
+            <p className="text-xs text-red-500/80 mb-3 text-center line-clamp-2">
               {image.errorMessage}
             </p>
           )}
           <Button
             size="sm"
             color="danger"
+            variant="flat"
             onPress={() => retryMutation.mutate(image.id)}
             isLoading={retryMutation.isPending}
+            className="mt-2"
           >
-            重试
+            🔄 重试
           </Button>
         </CardBody>
       </Card>
@@ -655,28 +735,40 @@ function ImageCard({
     <Card
       isPressable
       onPress={onPress || handleDownload}
-      className="aspect-square overflow-hidden group cursor-pointer"
+      className="aspect-square overflow-hidden group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300"
     >
       <CardBody className="p-0 relative">
         {shouldUseCanvas ? (
           <canvas
             ref={(el) => canvasRef[1](el)}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
           />
         ) : (
           <img
             src={image.fileUrl || ''}
             alt={image.emotionType || 'emotion'}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
           />
         )}
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-violet-600/0 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Label */}
         {!compact && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-            <p className="text-white text-sm font-medium text-center">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+            <p className="text-white text-base font-semibold text-center drop-shadow-lg">
               {image.emotionType ? EMOTION_LABELS[image.emotionType] || image.emotionType : ''}
             </p>
           </div>
         )}
+
+        {/* Download hint on hover */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+            <span className="text-sm">📥</span>
+          </div>
+        </div>
       </CardBody>
     </Card>
   )

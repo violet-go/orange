@@ -62,6 +62,25 @@ export function createDatabase(config: DatabaseConfig): Database {
       }
     },
 
+    getAllProjects(): Project[] {
+      const rowArray = db.query(`
+        SELECT * FROM projects ORDER BY created_at DESC
+      `).all() as any[]
+
+      return rowArray.map(row => ({
+        id: row.id,
+        userId: row.user_id,
+        inputType: row.input_type,
+        inputContent: row.input_content,
+        styleId: row.style_id,
+        customPrompt: row.custom_prompt,
+        seed: row.seed,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }))
+    },
+
     updateProject(id: string, updates: Partial<Project>): void {
       const setArray: string[] = []
       const valueArray: any[] = []

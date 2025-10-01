@@ -88,7 +88,12 @@ export function createRealImageGen(config: RealImageGenConfig): ImageGen {
                 { text: params.prompt }
               ]
             }]
-          })
+          }),
+          // Disable TLS certificate verification for relay API
+          // @ts-ignore - Bun-specific fetch option
+          tls: {
+            rejectUnauthorized: false
+          }
         })
 
         // Step 2: Error handling

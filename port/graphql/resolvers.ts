@@ -42,6 +42,38 @@ export function createResolvers() {
       },
 
       /**
+       * List projects with pagination and filtering
+       */
+      projects: async (
+        _: any,
+        { limit = 20, offset = 0, status }: { limit?: number; offset?: number; status?: string },
+        ctx: GraphQLContext
+      ) => {
+        ctx.logger.debug('Query.projects', { limit, offset, status })
+
+        // Get all projects from database (in-memory filtering for now)
+        const allProjects = ctx.db.getAllProjects?.() || []
+
+        // Filter by status if provided
+        let filteredProjects = allProjects
+        if (status) {
+          filteredProjects = allProjects.filter(p => p.status.toLowerCase() === status.toLowerCase())
+        }
+
+        // Sort by created_at descending (newest first)
+        filteredProjects.sort((a, b) => b.createdAt - a.createdAt)
+
+        // Apply pagination
+        const paginatedProjects = filteredProjects.slice(offset, offset + limit)
+
+        return {
+          nodeArray: paginatedProjects,
+          totalCount: filteredProjects.length,
+          hasMore: offset + limit < filteredProjects.length
+        }
+      },
+
+      /**
        * List all active style presets
        * Returns empty array if none exist
        */
@@ -126,8 +158,17 @@ export function createResolvers() {
        * Resolve images for a project
        * Lazy-loaded when images field is requested
        */
-      images: async (project: any, _: any, ctx: GraphQLContext) => {
-        return ctx.db.getImagesByProject(project.id)
+      images: async (project: any, { limit }: { limit?: number }, ctx: GraphQLContext) => {
+        const allImages = ctx.db.getImagesByProject(project.id)
+        return limit ? allImages.slice(0, limit) : allImages
+      },
+
+      /**
+       * Resolve style for a project
+       */
+      style: async (project: any, _: any, ctx: GraphQLContext) => {
+        if (!project.styleId) return null
+        return ctx.db.getStyle(project.styleId)
       },
 
       /**
@@ -150,11 +191,12 @@ export function createResolvers() {
      */
     Image: {
       /**
-       * Convert file path to accessible URL
-       * e.g., "data/images/proj-123/img-456.png" -> "/data/images/proj-123/img-456.png"
+       * Convert file path to accessible URL with full backend URL
+       * e.g., "data/images/proj-123/img-456.png" -> "http://localhost:3000/data/images/proj-123/img-456.png"
        */
       fileUrl: (image: any) => {
-        return `/${image.filePath}`
+        // Return absolute URL to backend server
+        return `http://localhost:3000/${image.filePath}`
       },
 
       /**

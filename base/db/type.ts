@@ -9,6 +9,7 @@ export interface Database {
   // Project operations
   createProject(project: CreateProjectInput): void
   getProject(id: string): Project | null
+  getAllProjects(): Project[]
   updateProject(id: string, updates: Partial<Project>): void
 
   // Image operations

@@ -106,12 +106,12 @@ function ProjectDetailPage() {
     },
     refetchInterval: (data) => {
       // Fallback to polling if WebSocket fails - only if generating
-      return data?.status === 'generating' ? 5000 : false
+      return data?.status === 'GENERATING' ? 5000 : false
     },
   })
 
   // WebSocket real-time progress
-  const { progress } = useProjectProgress(id, data?.status === 'generating')
+  const { progress } = useProjectProgress(id, data?.status === 'GENERATING')
 
   if (isLoading) {
     return (
@@ -134,22 +134,22 @@ function ProjectDetailPage() {
   }
 
   const project = data
-  const emotionImageArray = project.images.filter((img) => img.category === 'emotion')
-  const surpriseImageArray = project.images.filter((img) => img.category === 'surprise')
-  const completedCount = project.images.filter((img) => img.status === 'success').length
+  const emotionImageArray = project.images.filter((img) => img.category === 'EMOTION')
+  const surpriseImageArray = project.images.filter((img) => img.category === 'SURPRISE')
+  const completedCount = project.images.filter((img) => img.status === 'SUCCESS').length
   const totalCount = project.images.length
   const progressValue = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
-  const isGenerating = project.status === 'generating'
-  const isCompleted = project.status === 'completed' || project.status === 'partial_failed'
-  const failedImageArray = project.images.filter((img) => img.status === 'failed')
+  const isGenerating = project.status === 'GENERATING'
+  const isCompleted = project.status === 'COMPLETED' || project.status === 'PARTIAL_FAILED'
+  const failedImageArray = project.images.filter((img) => img.status === 'FAILED')
 
   const handleDownloadAll = async () => {
     setIsDownloading(true)
 
     try {
       const imagesToDownload = project.images
-        .filter((img) => img.status === 'success' && img.fileUrl)
+        .filter((img) => img.status === 'SUCCESS' && img.fileUrl)
         .map((img) => ({
           url: img.fileUrl!,
           filename: getImageFileName(img),
@@ -173,7 +173,7 @@ function ProjectDetailPage() {
   }
 
   function getImageFileName(image: Image): string {
-    if (image.category === 'emotion') {
+    if (image.category === 'EMOTION') {
       return `emotion-${image.emotionType}.png`
     } else {
       return `surprise-${String(image.surpriseIndex).padStart(2, '0')}.png`
@@ -416,7 +416,7 @@ function ProjectDetailPage() {
                     frameStyle={frameStyle}
                     frameConfig={frameConfig}
                     projectId={id}
-                    onPress={() => image.status === 'success' && setSelectedImageId(image.id)}
+                    onPress={() => image.status === 'SUCCESS' && setSelectedImageId(image.id)}
                   />
                 ))}
               </div>
@@ -443,7 +443,7 @@ function ProjectDetailPage() {
                       frameConfig={frameConfig}
                       projectId={id}
                       compact
-                      onPress={() => image.status === 'success' && setSelectedImageId(image.id)}
+                      onPress={() => image.status === 'SUCCESS' && setSelectedImageId(image.id)}
                     />
                   ))}
                 </div>
@@ -455,7 +455,7 @@ function ProjectDetailPage() {
         {/* Lightbox */}
         {selectedImageId && (
           <ImageLightbox
-            imageArray={project.images.filter((img) => img.status === 'success')}
+            imageArray={project.images.filter((img) => img.status === 'SUCCESS')}
             selectedId={selectedImageId}
             onClose={() => setSelectedImageId(null)}
           />
@@ -531,7 +531,7 @@ function ImageCard({
 
   // Load image for canvas rendering
   useEffect(() => {
-    if (frameStyle === 'none' || image.status !== 'success' || !image.fileUrl) {
+    if (frameStyle === 'none' || image.status !== 'SUCCESS' || !image.fileUrl) {
       setImageData(null)
       return
     }
@@ -649,7 +649,7 @@ function ImageCard({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      const filename = image.category === 'emotion'
+      const filename = image.category === 'EMOTION'
         ? `emotion-${image.emotionType}.png`
         : `surprise-${String(image.surpriseIndex).padStart(2, '0')}.png`
       a.download = filename
@@ -661,7 +661,7 @@ function ImageCard({
     }
   }
 
-  if (image.status === 'pending') {
+  if (image.status === 'PENDING') {
     return (
       <Card className="aspect-square border-0 shadow-md">
         <CardBody className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -686,7 +686,7 @@ function ImageCard({
     )
   }
 
-  if (image.status === 'generating') {
+  if (image.status === 'GENERATING') {
     return (
       <Card className="aspect-square border-0 shadow-md overflow-hidden">
         <CardBody className="flex items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50 relative">
@@ -700,7 +700,7 @@ function ImageCard({
     )
   }
 
-  if (image.status === 'failed') {
+  if (image.status === 'FAILED') {
     return (
       <Card className="aspect-square border-2 border-red-200 shadow-md">
         <CardBody className="flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-rose-50 p-4">
@@ -728,7 +728,7 @@ function ImageCard({
     )
   }
 
-  // status === 'success'
+  // status === 'SUCCESS'
   const shouldUseCanvas = frameStyle !== 'none' && imageData
 
   return (

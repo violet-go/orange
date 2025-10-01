@@ -17,6 +17,11 @@ export const typeDefs = /* GraphQL */ `
     project(id: ID!): Project
 
     """
+    List projects with pagination and filtering
+    """
+    projects(limit: Int, offset: Int, status: String): ProjectConnection!
+
+    """
     List all active style presets
     """
     styles: [Style!]!
@@ -69,6 +74,11 @@ export const typeDefs = /* GraphQL */ `
     Optional: random seed for reproducibility (auto-generated if not provided)
     """
     seed: Int
+
+    """
+    Optional: ID of project to remix from
+    """
+    remixFromId: ID
   }
 
   # ==================== Payload Types ====================
@@ -84,7 +94,8 @@ export const typeDefs = /* GraphQL */ `
     inputType: InputType!
     inputContent: String!
     status: ProjectStatus!
-    images: [Image!]!
+    style: Style
+    images(limit: Int): [Image!]!
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -93,6 +104,7 @@ export const typeDefs = /* GraphQL */ `
     id: ID!
     category: ImageCategory!
     emotionType: String
+    surpriseIndex: Int
     prompt: String!
     fileUrl: String!
     status: ImageStatus!
@@ -117,6 +129,12 @@ export const typeDefs = /* GraphQL */ `
     totalCount: Int!
     latestImage: Image
     timestamp: DateTime!
+  }
+
+  type ProjectConnection {
+    nodeArray: [Project!]!
+    totalCount: Int!
+    hasMore: Boolean!
   }
 
   # ==================== Enums ====================

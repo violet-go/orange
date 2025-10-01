@@ -5,6 +5,15 @@ echo "🚀 Phase 4 E2E Test - Real API Integration"
 echo "=========================================="
 echo ""
 
+# Set environment variables for relay platform
+export NANO_BANANA_API_KEY=sk-0jscjMBRrMjEZoaULtQdeoi1HglQtD3vaGQ8Af5isu0an78G
+export NANO_BANANA_BASE_URL=https://api.zetatechs.online
+
+echo "🔧 Using relay platform:"
+echo "   Base URL: $NANO_BANANA_BASE_URL"
+echo "   API Key: ${NANO_BANANA_API_KEY:0:15}..."
+echo ""
+
 # 1. Start server in background
 echo "📡 Starting server..."
 bun run index.ts &

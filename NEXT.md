@@ -1,339 +1,264 @@
-# Phase 3 开发指令
+# Phase 4 开发指令
 
 ## 📍 当前状态
 
-✅ **Phase 1 已完成** (commit: 624fdea)
-- base/config, logger, db, storage, pubsub 全部实现
-- 18 个测试全部通过
-
-✅ **Phase 2 已完成**
-- core/prompt, image, gen 全部实现
-- 12 个测试全部通过，执行时间 2.93s
+✅ **Phase 1-2 已完成** (commit: 624fdea, e8a6f12)
+- base/core 模块全部实现并测试通过
 - Mock 模式完整生成流程验证
 
-## 🎯 Phase 3 目标
+✅ **Phase 3 已完成** (当前会话)
+- GraphQL API 层实现完毕（schema + resolvers + server）
+- Hono + GraphQL Yoga 集成成功
+- 手动测试验证：Query/Mutation 正常工作
+- 静态文件服务正常
 
-实现 **GraphQL API 层**，暴露 Query/Mutation/Subscription 接口。
+## 🎯 Phase 4 目标
 
-**验收标准**：11 个测试通过，GraphQL Playground 可访问，Subscription 连接稳定
+实现 **真实 API 集成**，从 Mock 切换到 Google Nano Banana 真实图片生成。
+
+**验收标准**：端到端生成 9 张真实图片，Subscription 实时推送进度，错误处理和重试机制验证
 
 ---
 
 ## 🚀 快速启动步骤
 
-### Step 1: 阅读上下文 (2 分钟)
+### Step 1: 实现真实 ImageGen (30 分钟)
 
-```bash
-# 必读文件
-cat .ctx/feature-design.md | sed -n '/GraphQL Schema/,/## 架构设计/p'  # Schema 定义
-cat .ctx/feature-design.md | sed -n '/GraphQL Resolvers/,/## 开发路线图/p'  # Resolver 实现
-cat .ctx/acceptance-criteria.md | sed -n '/Phase 3/,/Phase 4/p'  # 验收条件
-```
+**当前状态**：`core/image/proc.ts` 只有 Mock 实现
 
-**关键理解**：
-- GraphQL Yoga 5.x - Bun 原生支持，内置 Subscription
-- Hono 作为 HTTP 框架，集成 GraphQL Yoga
-- Schema-first 设计：先定义类型，再实现 Resolver
-- Subscription 通过内存 PubSub 实现（Phase 1 已完成）
-
-### Step 2: port/graphql/schema - GraphQL Schema 定义 (30 分钟)
+**任务**：添加真实 Google Nano Banana API 调用
 
 **实现文件**：
-1. `port/graphql/schema.ts` - GraphQL SDL 定义
-
-**参考代码**：`.ctx/feature-design.md` 第 134-230 行
-
-**Schema 要点**：
-```graphql
-type Query {
-  project(id: ID!): Project
-  styles: [Style!]!
-}
-
-type Mutation {
-  createProject(input: CreateProjectInput!): CreateProjectPayload!
-}
-
-type Subscription {
-  projectProgress(projectId: ID!): ProjectProgressUpdate!
-}
-```
-
-**核心类型**：
-- `Project`: id, inputType, inputContent, status, images, timestamps
-- `Image`: id, category, emotionType, prompt, fileUrl, status, metadata
-- `Style`: id, displayName, description, promptTemplate
-- `ProjectProgressUpdate`: projectId, status, completedCount, totalCount, latestImage
-
-**自主验证**：
-```bash
-# 语法检查（如果有 graphql-cli）
-npx graphql-schema-linter port/graphql/schema.ts
-```
-
-### Step 3: port/graphql/resolvers - Resolver 实现 (45 分钟)
-
-**实现文件**：
-1. `port/graphql/resolvers.ts` - Query/Mutation/Subscription Resolver
-2. `port/graphql/context.ts` - GraphQL Context 类型定义
-
-**参考代码**：`.ctx/feature-design.md` 第 724-781 行
-
-**Resolver 要点**：
 ```typescript
-// Query Resolvers
-Query: {
-  project: (_, { id }, ctx) => ctx.db.getProject(id),
-  styles: (_, __, ctx) => ctx.db.getActiveStyles()
-}
+// core/image/proc.ts - 添加 createRealImageGen()
 
-// Mutation Resolvers
-Mutation: {
-  createProject: async (_, { input }, ctx) => {
-    const projectId = await ctx.genService.generate(input)
-    return { project: ctx.db.getProject(projectId) }
-  }
-}
-
-// Subscription Resolvers
-Subscription: {
-  projectProgress: {
-    subscribe: (_, { projectId }, ctx) =>
-      ctx.pubsub.subscribe(`project:${projectId}`),
-    resolve: (payload) => payload
-  }
-}
-
-// Field Resolvers
-Project: {
-  images: (project, _, ctx) => ctx.db.getImagesByProject(project.id)
-}
-
-Image: {
-  fileUrl: (image) => `/${image.filePath}`
-}
-```
-
-**Context 类型**：
-```typescript
-export interface GraphQLContext {
-  db: Database
-  genService: GenService
-  pubsub: PubSub
+export function createRealImageGen(config: {
+  apiKey: string
+  baseUrl: string
   logger: Logger
+}): ImageGen {
+  return {
+    async generate(params) {
+      // 1. 调用 Google Nano Banana API
+      const response = await fetch(`${config.baseUrl}/generate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${config.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: params.prompt,
+          seed: params.seed || Math.floor(Math.random() * 1000000),
+          width: params.width || 512,
+          height: params.height || 512
+        })
+      })
+
+      // 2. 错误处理
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      // 3. 下载图片
+      const data = await response.json()
+      const imageResponse = await fetch(data.imageUrl)
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
+
+      return {
+        imageBuffer,
+        width: data.width,
+        height: data.height,
+        metadata: { modelVersion: data.version }
+      }
+    }
+  }
 }
 ```
 
-**自主验证**：
-```bash
-# TypeScript 编译检查
-bun build port/graphql/resolvers.ts --target=bun
-```
-
-### Step 4: index.ts - Hono + GraphQL Yoga 集成 (30 分钟)
-
-**实现文件**：
-1. `index.ts` - 服务器入口，集成所有模块
-
-**参考代码**：`.ctx/feature-design.md` 未明确给出，需根据 Hono + GraphQL Yoga 最佳实践实现
-
-**集成要点**：
+**更新 index.ts**：
 ```typescript
-import { Hono } from 'hono'
-import { createYoga } from 'graphql-yoga'
-import { createSchema } from 'graphql-yoga'
-
-// 1. 初始化所有依赖
-const config = loadConfig()
-const logger = createLogger()
-const db = createDatabase({ path: config.dbPath, logger })
-const storage = createStorage({ basePath: config.storagePath })
-const pubsub = createPubSub()
-const promptBuilder = createPromptBuilder()
-const imageGen = createMockImageGen({ delay: 50 })
-const genService = createGenService({ db, storage, imageGen, promptBuilder, pubsub, logger })
-
-// 2. 创建 GraphQL Yoga 实例
-const yoga = createYoga({
-  schema: createSchema({
-    typeDefs: /* GraphQL SDL */,
-    resolvers: createResolvers({ db, genService, pubsub, logger })
-  }),
-  context: { db, genService, pubsub, logger }
+// 替换 Mock 为 Real
+const imageGen = createRealImageGen({
+  apiKey: config.nanoBananaApiKey,
+  baseUrl: config.nanoBananaBaseUrl,
+  logger
 })
-
-// 3. 创建 Hono 应用
-const app = new Hono()
-
-// 4. GraphQL 端点
-app.all('/graphql', async (c) => {
-  const response = await yoga.fetch(c.req.raw, {
-    db, genService, pubsub, logger
-  })
-  return response
-})
-
-// 5. 静态文件服务
-app.get('/data/images/*', async (c) => {
-  const path = c.req.path.replace('/data/', '')
-  const buffer = await storage.read(path)
-  return new Response(buffer, {
-    headers: { 'Content-Type': 'image/png' }
-  })
-})
-
-// 6. 启动服务器
-export default {
-  port: config.port,
-  fetch: app.fetch
-}
 ```
 
-**自主验证**：
+**验证**：
 ```bash
 # 启动服务器
 bun run index.ts
 
-# 另一个终端测试
-curl http://localhost:3000/graphql
+# 创建测试 Project
+curl -X POST http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation { createProject(input: { inputType: TEXT, inputContent: \"a simple red apple\" }) { project { id } } }"}'
+
+# 等待 1-2 分钟，查询结果
+curl -X POST http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ project(id: \"刚才的ID\") { status images { status errorMessage } } }"}'
 ```
 
-### Step 5: 手动测试 GraphQL Playground (15 分钟)
+### Step 2: E2E 测试脚本 (20 分钟)
 
-**测试用例**：
+**创建测试脚本**：`test/phase4/e2e-test.sh`
 
-```graphql
-# 1. Query: 查询可用风格
-query {
-  styles {
-    id
-    displayName
-    description
-  }
-}
-
-# 2. Mutation: 创建 Project
-mutation {
-  createProject(input: {
-    inputType: TEXT
-    inputContent: "a cute cat girl with cat ears"
-  }) {
-    project {
-      id
-      status
-      inputType
-      inputContent
-    }
-  }
-}
-
-# 3. Query: 查询 Project 详情
-query {
-  project(id: "刚才创建的 project id") {
-    id
-    status
-    images {
-      id
-      emotionType
-      status
-      fileUrl
-    }
-  }
-}
-
-# 4. Subscription: 订阅进度更新
-subscription {
-  projectProgress(projectId: "project id") {
-    projectId
-    status
-    completedCount
-    totalCount
-    latestImage {
-      id
-      emotionType
-      status
-    }
-  }
-}
-```
-
-**验收点**：
-- ✓ GraphQL Playground 在 http://localhost:3000/graphql 可访问
-- ✓ Query.styles 返回空数组（暂无预设风格）
-- ✓ Mutation.createProject 创建成功，立即返回 pending 状态
-- ✓ Query.project 可查询到创建的 Project
-- ✓ Subscription 能建立 WebSocket 连接
-- ✓ 等待 1-2 秒后，Subscription 推送进度更新
-
-### Step 6: 自动化测试（可选，建议 Phase 4 再做）
-
-**Phase 3 验收主要依赖手动测试**，因为：
-1. GraphQL 集成测试需要启动完整服务器
-2. Subscription 测试需要 WebSocket 客户端
-3. 这些属于 E2E 测试，Phase 4 更合适
-
-**如果要做自动化测试**：
 ```bash
-# 创建测试文件
-mkdir -p test/phase3
-touch test/phase3/graphql-server.test.ts
-touch test/phase3/mutation.test.ts
-touch test/phase3/subscription.test.ts
+#!/bin/bash
+set -e
+
+echo "🚀 Phase 4 E2E Test"
+
+# 1. 启动服务器
+bun run index.ts &
+SERVER_PID=$!
+sleep 3
+
+# 2. 创建 Project
+PROJECT_ID=$(curl -s -X POST http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation { createProject(input: { inputType: TEXT, inputContent: \"cute cat girl anime\" }) { project { id } } }"}' \
+  | jq -r '.data.createProject.project.id')
+
+echo "✓ Project created: $PROJECT_ID"
+
+# 3. 轮询等待完成（最多 2 分钟）
+for i in {1..24}; do
+  sleep 5
+  STATUS=$(curl -s -X POST http://localhost:3000/graphql \
+    -H 'Content-Type: application/json' \
+    -d "{\"query\":\"{ project(id: \\\"$PROJECT_ID\\\") { status } }\"}" \
+    | jq -r '.data.project.status')
+
+  echo "  [$i] Status: $STATUS"
+
+  if [[ "$STATUS" == "COMPLETED" || "$STATUS" == "PARTIAL_FAILED" ]]; then
+    break
+  fi
+done
+
+# 4. 验证结果
+RESULT=$(curl -s -X POST http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d "{\"query\":\"{ project(id: \\\"$PROJECT_ID\\\") { status images { id status } } }\"}")
+
+SUCCESS_COUNT=$(echo "$RESULT" | jq '[.data.project.images[] | select(.status == "SUCCESS")] | length')
+FINAL_STATUS=$(echo "$RESULT" | jq -r '.data.project.status')
+
+echo ""
+echo "========================================="
+echo "Final Status: $FINAL_STATUS"
+echo "Success: $SUCCESS_COUNT/9 images"
+
+# 5. 清理
+kill $SERVER_PID 2>/dev/null || true
+
+if [ "$SUCCESS_COUNT" -ge 8 ]; then
+  echo "✅ E2E Test PASSED"
+  exit 0
+else
+  echo "❌ E2E Test FAILED"
+  exit 1
+fi
+```
+
+**执行**：
+```bash
+chmod +x test/phase4/e2e-test.sh
+./test/phase4/e2e-test.sh
+```
+
+### Step 3: Subscription 测试 (可选，15 分钟)
+
+**使用 WebSocket 客户端测试**：
+
+```bash
+# 安装 wscat
+bun add -d wscat
+
+# 连接 WebSocket
+wscat -c ws://localhost:3000/graphql -s graphql-ws
+
+# 发送 Subscription
+{"type":"connection_init"}
+{"id":"1","type":"subscribe","payload":{"query":"subscription { projectProgress(projectId: \"xxx\") { status completedCount totalCount } }"}}
+```
+
+或使用 GraphQL Playground 的 Subscription 标签页手动测试。
+
+### Step 4: 错误处理测试 (可选，15 分钟)
+
+**测试场景**：
+1. 无效 API Key → 验证错误日志和 Image status=failed
+2. 网络超时 → 验证重试逻辑
+3. 部分图片失败 → 验证 Project status=partial_failed
+
+**修改 .env 测试**：
+```bash
+# 临时使用无效 API Key
+NANO_BANANA_API_KEY=invalid_key_test
+
+# 启动并创建 Project
+bun run index.ts
+
+# 观察日志中的错误处理
 ```
 
 ---
 
 ## 🔑 关键原则
 
-1. **Schema-First 设计** - 先定义 GraphQL Schema，确保类型安全
-2. **Context 注入** - 通过 Context 传递依赖，避免全局变量
-3. **Field Resolver** - 使用 Field Resolver 延迟加载关联数据
-4. **错误处理** - GraphQL 错误统一返回，HTTP 500 只用于服务器崩溃
-5. **手动测试优先** - Phase 3 重点是"能跑通"，不强求测试覆盖
+1. **API Key 安全** - 确保 .env 中有真实有效的 API Key
+2. **超时处理** - 图片生成可能需要 5-10 秒/张，设置合理超时
+3. **重试策略** - 失败后自动重试 1 次（已在 GenService 实现）
+4. **日志完整** - 记录每次 API 调用的成功/失败
+5. **渐进验证** - 先测试单张图片，再测试完整 9 张
 
 ## 🎯 成功标准
 
-今天结束时应该达到：
-- ✅ GraphQL Playground 可访问
-- ✅ 能通过 Mutation 创建 Project
-- ✅ 能通过 Query 查询 Project
-- ✅ 能通过 Subscription 订阅进度
-- ✅ 静态图片文件可通过 HTTP 访问
+Phase 4 结束时应该达到：
+- ✅ 真实 API 能成功生成图片
+- ✅ E2E 测试：9 张图片成功率 ≥ 90% (≥8 张)
+- ✅ 生成时间：单个 Project < 2 分钟
+- ✅ Subscription 能接收到至少 9 次进度更新
+- ✅ 错误处理：失败的图片有明确错误信息
+- ✅ 重试逻辑：失败后自动重试使用不同 seed
 
 ## 💡 快速命令
 
 ```bash
-# 启动开发
+# 查看当前状态
 cd /home/violet/proj/orange
+git status
 
-# 查看 Phase 3 验收条件
-cat .ctx/acceptance-criteria.md | sed -n '/Phase 3/,/Phase 4/p'
+# 查看 Phase 4 验收条件
+cat .ctx/acceptance-criteria.md | sed -n '/Phase 4/,/Phase 5/p'
 
-# 启动服务器
+# 启动开发服务器
 bun run index.ts
 
-# 访问 GraphQL Playground
-open http://localhost:3000/graphql
+# 快速测试单个请求
+curl -X POST http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"mutation { createProject(input: { inputType: TEXT, inputContent: \"test\" }) { project { id status } } }"}'
 
-# 查看 Git 状态
-git status
+# 查看生成的图片
+ls -lh data/images/*/
 ```
 
 ---
 
-## 📚 技术栈参考
+## 📚 参考资料
 
-- **Hono**: https://hono.dev/
-- **GraphQL Yoga**: https://the-guild.dev/graphql/yoga-server
-- **GraphQL**: https://graphql.org/learn/
-
-**Bun 原生 API**：
-- `Bun.serve()` - HTTP 服务器
-- WebSocket 内置支持 Subscription
+- **Google Nano Banana API 文档**：https://api.nanoBanana.com/docs
+- **GraphQL Subscriptions**：https://the-guild.dev/graphql/yoga-server/docs/features/subscriptions
+- **Bun fetch API**：https://bun.sh/docs/api/fetch
 
 ---
 
-**预计时间**：2-3 小时
-**当前时间**：2025-10-01 18:23
+**预计时间**：1-2 小时（取决于真实 API 响应速度）
+**当前时间**：2025-10-01 18:38
 
-Phase 2 ✅ 完成，开始 Phase 3！🚀
+Phase 3 ✅ 完成，开始 Phase 4！🚀

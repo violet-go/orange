@@ -1,4 +1,20 @@
 
+## 🔴 CRITICAL SAFETY RULES - 生存约束
+
+**NEVER EVER execute these commands - they will kill Claude Code itself:**
+- ❌ `pkill -f "bun.*index.ts"` - KILLS SELF
+- ❌ `pkill -f bun` - KILLS SELF
+- ❌ `killall bun` - KILLS SELF
+
+**Correct way to stop test servers:**
+- ✅ Track server PID: `bun run index.ts & SERVER_PID=$!`
+- ✅ Kill specific PID: `kill $SERVER_PID`
+- ✅ Or let trap/cleanup handle it in scripts
+
+**Remember: Claude Code runs on Bun. Killing Bun = suicide.**
+
+---
+
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`

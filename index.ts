@@ -20,7 +20,7 @@ import { createPubSub } from './base/pubsub/proc'
 
 // Core modules
 import { createPromptBuilder } from './core/prompt/proc'
-import { createMockImageGen } from './core/image/proc'
+import { createMockImageGen, createRealImageGen } from './core/image/proc'
 import { createGenService } from './core/gen/proc'
 
 // GraphQL
@@ -46,7 +46,14 @@ const pubsub = createPubSub()
 
 // Initialize core modules
 const promptBuilder = createPromptBuilder()
-const imageGen = createMockImageGen({ delay: 50 }) // Mock mode for Phase 3
+
+// Phase 4: Switch to real API
+const imageGen = createRealImageGen({
+  apiKey: config.nanoBananaApiKey,
+  baseUrl: config.nanoBananaBaseUrl,
+  logger: logger.child('imageGen')
+})
+
 const genService = createGenService({
   db,
   storage,

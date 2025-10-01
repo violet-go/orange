@@ -9,6 +9,8 @@
     "test": "bun test",
     "test:phase1": "bun test test/phase1.test.ts",
     "test:phase2": "bun test test/phase2.test.ts",
+    "test:phase3": "./test/phase3/server-test.sh",
+    "test:phase4": "./test/phase4/e2e-test.sh",
     "test:watch": "bun test --watch"
   },
   "devDependencies": {

@@ -133,31 +133,39 @@ app.all('/graphql', async (c) => {
 
 // Static file serving for generated images
 app.get('/data/images/*', async (c) => {
+  const requestPath = c.req.path // e.g., "/data/images/proj-123/img-456.png"
+  const filePath = requestPath.replace('/data/', '') // "images/proj-123/img-456.png"
+
+  logger.info('📸 Serving image', { requestPath, filePath })
+
   try {
-    const requestPath = c.req.path // e.g., "/data/images/proj-123/img-456.png"
-    const filePath = requestPath.replace('/data/', '') // "images/proj-123/img-456.png"
-
-    logger.debug('Serving static file', { requestPath, filePath })
-
     // Check if file exists
     const exists = await storage.exists(filePath)
     if (!exists) {
-      logger.warn('File not found', { filePath })
+      logger.warn('⚠️ File not found', { filePath })
+      // Ensure CORS headers on error response
+      const origin = c.req.header('origin') || 'http://localhost:5173'
+      c.header('Access-Control-Allow-Origin', origin)
+      c.header('Access-Control-Allow-Credentials', 'true')
       return c.text('File not found', 404)
     }
 
     // Read file
     const buffer = await storage.read(filePath)
 
-    logger.debug('File read successfully', { filePath, bufferSize: buffer.length })
+    logger.info('✅ File served', { filePath, size: buffer.length })
 
-    // Return with appropriate Content-Type using Hono's body method
+    // Return with appropriate headers
     c.header('Content-Type', 'image/png')
     c.header('Cache-Control', 'public, max-age=31536000')
     c.header('Content-Length', String(buffer.length))
     return c.body(buffer)
   } catch (error) {
-    logger.error('Error serving static file', error as Error)
+    logger.error('❌ Error serving file', { filePath, error: error as Error })
+    // Ensure CORS headers on error response
+    const origin = c.req.header('origin') || 'http://localhost:5173'
+    c.header('Access-Control-Allow-Origin', origin)
+    c.header('Access-Control-Allow-Credentials', 'true')
     return c.text('Internal server error', 500)
   }
 })

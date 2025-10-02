@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Button,
   Card,
@@ -144,31 +144,215 @@ function ProjectDetailPage() {
   const isCompleted = project.status === 'COMPLETED' || project.status === 'PARTIAL_FAILED'
   const failedImageArray = project.images.filter((img) => img.status === 'FAILED')
 
+  const applyFrameToImage = async (imageUrl: string): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.src = imageUrl
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        const size = 512
+        canvas.width = size
+        canvas.height = size
+
+        ctx.clearRect(0, 0, size, size)
+
+        // Apply frame based on frameStyle
+        switch (frameStyle) {
+          case 'none':
+            ctx.drawImage(img, 0, 0, size, size)
+            break
+
+          case 'white-border':
+            const borderWidth = 20
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'
+            ctx.shadowBlur = 10
+            ctx.shadowOffsetY = 4
+            ctx.fillStyle = '#ffffff'
+            ctx.fillRect(0, 0, size, size)
+            ctx.shadowColor = 'transparent'
+            ctx.shadowBlur = 0
+            ctx.shadowOffsetY = 0
+            ctx.drawImage(img, borderWidth, borderWidth, size - borderWidth * 2, size - borderWidth * 2)
+            break
+
+          case 'rounded':
+            const radius = 40
+            ctx.save()
+            ctx.beginPath()
+            ctx.moveTo(radius, 0)
+            ctx.arcTo(size, 0, size, size, radius)
+            ctx.arcTo(size, size, 0, size, radius)
+            ctx.arcTo(0, size, 0, 0, radius)
+            ctx.arcTo(0, 0, size, 0, radius)
+            ctx.closePath()
+            ctx.clip()
+            ctx.drawImage(img, 0, 0, size, size)
+            ctx.restore()
+            break
+
+          case 'polaroid':
+            const polaroidBorder = 30
+            const polaroidBottom = 100
+            ctx.fillStyle = '#ffe8cc'
+            ctx.fillRect(0, 0, size, size)
+            ctx.drawImage(img, polaroidBorder, polaroidBorder, size - polaroidBorder * 2, size - polaroidBorder - polaroidBottom)
+            ctx.fillStyle = '#ffd9a6'
+            ctx.fillRect(polaroidBorder, size - polaroidBottom, size - polaroidBorder * 2, polaroidBottom - polaroidBorder)
+            ctx.strokeStyle = '#cc9966'
+            ctx.lineWidth = 3
+            ctx.beginPath()
+            ctx.moveTo(15, 15)
+            ctx.lineTo(40, 15)
+            ctx.moveTo(15, 15)
+            ctx.lineTo(15, 40)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(size - 15, 15)
+            ctx.lineTo(size - 40, 15)
+            ctx.moveTo(size - 15, 15)
+            ctx.lineTo(size - 15, 40)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(15, size - 15)
+            ctx.lineTo(40, size - 15)
+            ctx.moveTo(15, size - 15)
+            ctx.lineTo(15, size - 40)
+            ctx.stroke()
+            ctx.beginPath()
+            ctx.moveTo(size - 15, size - 15)
+            ctx.lineTo(size - 40, size - 15)
+            ctx.moveTo(size - 15, size - 15)
+            ctx.lineTo(size - 15, size - 40)
+            ctx.stroke()
+            break
+
+          case 'custom':
+            if (frameConfig) {
+              const bw = frameConfig.borderWidth
+              const br = frameConfig.borderRadius
+              ctx.fillStyle = frameConfig.borderColor
+              ctx.fillRect(0, 0, size, size)
+              ctx.shadowColor = frameConfig.shadowColor
+              ctx.shadowBlur = frameConfig.shadowBlur
+              ctx.shadowOffsetX = frameConfig.shadowOffsetX
+              ctx.shadowOffsetY = frameConfig.shadowOffsetY
+              if (br > 0) {
+                ctx.save()
+                ctx.beginPath()
+                const x = bw, y = bw, w = size - bw * 2, h = size - bw * 2
+                ctx.moveTo(x + br, y)
+                ctx.arcTo(x + w, y, x + w, y + h, br)
+                ctx.arcTo(x + w, y + h, x, y + h, br)
+                ctx.arcTo(x, y + h, x, y, br)
+                ctx.arcTo(x, y, x + w, y, br)
+                ctx.closePath()
+                ctx.clip()
+                ctx.drawImage(img, bw, bw, size - bw * 2, size - bw * 2)
+                ctx.restore()
+              } else {
+                ctx.drawImage(img, bw, bw, size - bw * 2, size - bw * 2)
+              }
+            }
+            break
+        }
+
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+          else reject(new Error('Failed to create blob'))
+        }, 'image/png')
+      }
+
+      img.onerror = () => reject(new Error('Failed to load image'))
+    })
+  }
+
   const handleDownloadAll = async () => {
     setIsDownloading(true)
 
     try {
-      // If frame is applied, we need to export canvas content
-      // For now, still download original URLs - canvas export will be handled by individual ImageCard
-      const imagesToDownload = project.images
-        .filter((img) => img.status === 'SUCCESS' && img.fileUrl)
-        .map((img) => ({
+      const successImageArray = project.images.filter((img) => img.status === 'SUCCESS' && img.fileUrl)
+
+      if (successImageArray.length === 0) {
+        alert('没有可下载的图片')
+        return
+      }
+
+      // If frame is applied, process images with canvas
+      if (frameStyle !== 'none') {
+        const zip = (await import('jszip')).default
+        const fileSaver = await import('file-saver')
+        const { saveAs } = fileSaver.default
+
+        const zipFile = new zip()
+        const emotionsFolder = zipFile.folder('emotions')
+        const surprisesFolder = zipFile.folder('surprises')
+
+        let successCount = 0
+        let failedCount = 0
+        const failedImageArray: string[] = []
+
+        for (let i = 0; i < successImageArray.length; i++) {
+          const img = successImageArray[i]
+          const filename = getImageFileName(img)
+
+          try {
+            const blob = await applyFrameToImage(img.fileUrl!)
+            const folder = img.category === 'EMOTION' ? emotionsFolder : surprisesFolder
+            folder?.file(filename, blob)
+            successCount++
+            setDownloadProgress({ current: i + 1, total: successImageArray.length })
+          } catch (error) {
+            console.error(`Failed to process ${filename}:`, error)
+            failedCount++
+            failedImageArray.push(filename)
+          }
+        }
+
+        if (successCount === 0) {
+          throw new Error(`所有图片处理失败 (${failedCount}/${successImageArray.length})`)
+        }
+
+        const zipBlob = await zipFile.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } })
+        saveAs(zipBlob, `peelpack-${project.id}-framed.zip`)
+
+        if (failedCount > 0) {
+          alert(`部分下载成功！\n成功: ${successCount}\n失败: ${failedCount}`)
+        } else {
+          alert(`下载成功！共 ${successCount} 张带相框的图片`)
+        }
+      } else {
+        // No frame, download original images
+        const imagesToDownload = successImageArray.map((img) => ({
           url: img.fileUrl!,
           filename: getImageFileName(img),
         }))
 
-      await downloadImagesAsZip(
-        imagesToDownload,
-        `peelpack-${project.id}.zip`,
-        (current, total) => {
-          setDownloadProgress({ current, total })
-        }
-      )
+        const result = await downloadImagesAsZip(
+          imagesToDownload,
+          `peelpack-${project.id}.zip`,
+          (current, total) => {
+            setDownloadProgress({ current, total })
+          }
+        )
 
-      alert('下载成功！')
+        if (result.failedCount > 0) {
+          alert(`部分下载成功！\n成功: ${result.successCount}\n失败: ${result.failedCount}`)
+        } else {
+          alert(`下载成功！共 ${result.successCount} 张图片`)
+        }
+      }
     } catch (error) {
       console.error('Download failed:', error)
-      alert('下载失败，请重试')
+      const errorMessage = error instanceof Error ? error.message : '未知错误'
+      alert(`下载失败：\n${errorMessage}`)
     } finally {
       setIsDownloading(false)
     }
@@ -599,7 +783,7 @@ function ImageCard({
       queryClient.invalidateQueries(['project', projectId])
     },
   })
-  const canvasRef = useState<HTMLCanvasElement | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [imageData, setImageData] = useState<HTMLImageElement | null>(null)
 
   // Load image for canvas rendering
@@ -617,9 +801,9 @@ function ImageCard({
 
   // Render canvas when image data or frame style changes
   useEffect(() => {
-    if (!canvasRef[0] || !imageData) return
+    if (!canvasRef.current || !imageData) return
 
-    const canvas = canvasRef[0]
+    const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -637,8 +821,16 @@ function ImageCard({
     switch (frameStyle) {
       case 'white-border':
         const borderWidth = 20
+        // Apply shadow before drawing
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'
+        ctx.shadowBlur = 10
+        ctx.shadowOffsetY = 4
         ctx.fillStyle = '#ffffff'
         ctx.fillRect(0, 0, size, size)
+        // Reset shadow for image
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
+        ctx.shadowOffsetY = 0
         ctx.drawImage(
           imageData,
           borderWidth,
@@ -646,9 +838,6 @@ function ImageCard({
           size - borderWidth * 2,
           size - borderWidth * 2
         )
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)'
-        ctx.shadowBlur = 10
-        ctx.shadowOffsetY = 4
         break
 
       case 'rounded':
@@ -667,11 +856,58 @@ function ImageCard({
         break
 
       case 'polaroid':
-        ctx.fillStyle = '#ffffff'
+        // Obvious polaroid frame with vintage color
+        const polaroidBorder = 30
+        const polaroidBottom = 100
+
+        // Vintage cream background (明显的米黄色)
+        ctx.fillStyle = '#ffe8cc'
         ctx.fillRect(0, 0, size, size)
-        ctx.drawImage(imageData, 20, 20, size - 40, size - 100)
-        ctx.fillStyle = '#f9fafb'
-        ctx.fillRect(20, size - 80, size - 40, 60)
+
+        // Draw image in center-top area
+        ctx.drawImage(
+          imageData,
+          polaroidBorder,
+          polaroidBorder,
+          size - polaroidBorder * 2,
+          size - polaroidBorder - polaroidBottom
+        )
+
+        // Bottom text area with contrasting color
+        ctx.fillStyle = '#ffd9a6'
+        ctx.fillRect(polaroidBorder, size - polaroidBottom, size - polaroidBorder * 2, polaroidBottom - polaroidBorder)
+
+        // Add decorative corner marks
+        ctx.strokeStyle = '#cc9966'
+        ctx.lineWidth = 3
+        // Top-left corner
+        ctx.beginPath()
+        ctx.moveTo(15, 15)
+        ctx.lineTo(40, 15)
+        ctx.moveTo(15, 15)
+        ctx.lineTo(15, 40)
+        ctx.stroke()
+        // Top-right corner
+        ctx.beginPath()
+        ctx.moveTo(size - 15, 15)
+        ctx.lineTo(size - 40, 15)
+        ctx.moveTo(size - 15, 15)
+        ctx.lineTo(size - 15, 40)
+        ctx.stroke()
+        // Bottom-left corner
+        ctx.beginPath()
+        ctx.moveTo(15, size - 15)
+        ctx.lineTo(40, size - 15)
+        ctx.moveTo(15, size - 15)
+        ctx.lineTo(15, size - 40)
+        ctx.stroke()
+        // Bottom-right corner
+        ctx.beginPath()
+        ctx.moveTo(size - 15, size - 15)
+        ctx.lineTo(size - 40, size - 15)
+        ctx.moveTo(size - 15, size - 15)
+        ctx.lineTo(size - 15, size - 40)
+        ctx.stroke()
         break
 
       case 'custom':
@@ -722,8 +958,8 @@ function ImageCard({
 
     try {
       // If frame is applied and canvas is available, export from canvas
-      if (frameStyle !== 'none' && imageData && canvasRef[0]) {
-        canvasRef[0].toBlob((blob) => {
+      if (frameStyle !== 'none' && imageData && canvasRef.current) {
+        canvasRef.current.toBlob((blob) => {
           if (!blob) {
             alert('导出失败，请重试')
             return
@@ -848,7 +1084,7 @@ function ImageCard({
       <CardBody className="p-0 relative">
         {shouldUseCanvas ? (
           <canvas
-            ref={(el) => canvasRef[1](el)}
+            ref={canvasRef}
             className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
           />
         ) : (
@@ -871,10 +1107,17 @@ function ImageCard({
           </div>
         )}
 
-        {/* Download hint on hover */}
-        <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ top: 'var(--space-2)', right: 'var(--space-2)' }}>
-          <div className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
-            <span className="text-sm">📥</span>
+        {/* Download button on hover */}
+        <div
+          className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+          style={{ top: 'var(--space-2)', right: 'var(--space-2)' }}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleDownload()
+          }}
+        >
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/50">
+            <span className="text-lg">📥</span>
           </div>
         </div>
       </CardBody>

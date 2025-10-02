@@ -16,9 +16,11 @@
 
 <div align="center">
 
-<iframe src="https://player.vimeo.com/video/1123915246?h=0" width="640" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+[![产品演示视频](https://vumbnail.com/1123915246.jpg)](https://vimeo.com/1123915246)
 
 **90 秒看懂整个流程** | 从输入到生成 | 完整体验展示
+
+_👆 点击图片观看完整演示视频_
 
 </div>
 

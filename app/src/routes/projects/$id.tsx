@@ -202,16 +202,36 @@ function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-violet-50/50 via-purple-50/30 to-pink-50/50">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-violet-400/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-400/10 rounded-full blur-3xl" />
+    <div className="min-h-screen relative overflow-hidden flex justify-center">
+      {/* Background Effects - 与主页一致 */}
+      <div className="background-container">
+        <div className="grid-background"></div>
+        <div className="grid-accent"></div>
+        <div className="rainbow-dots">
+          <span className="rainbow-dot"></span>
+          <span className="rainbow-dot"></span>
+          <span className="rainbow-dot"></span>
+          <span className="rainbow-dot"></span>
+          <span className="rainbow-dot"></span>
+          <span className="rainbow-dot"></span>
+        </div>
+      </div>
 
-      <main className="relative max-w-7xl mx-auto px-4 py-12">
+      <main className="relative w-full" style={{
+        maxWidth: '1440px',
+        paddingTop: '120px',
+        paddingBottom: '80px',
+        paddingLeft: 'clamp(var(--space-4), 4vw, var(--space-12))',
+        paddingRight: 'clamp(var(--space-4), 4vw, var(--space-12))'
+      }}>
         {isGenerating && (
-          <Card className="mb-8 glass-card border-0 shadow-xl animate-fade-in">
-            <CardBody className="p-8">
-              <div className="flex items-center gap-3 mb-6">
+          <Card className="border-0 shadow-xl animate-fade-in" style={{
+            marginBottom: 'var(--space-12)',
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: '1px solid var(--color-grid-line)'
+          }}>
+            <CardBody style={{ padding: 'var(--space-8)' }}>
+              <div className="flex items-center mb-6" style={{ gap: 'var(--space-3)' }}>
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse">
                     <span className="text-white text-2xl">✨</span>
@@ -222,17 +242,17 @@ function ProjectDetailPage() {
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className="text-3xl font-bold rainbow-text">
                     AI 创作中...
                   </h1>
-                  <p className="text-gray-600 text-sm mt-1">魔法正在发生，请稍候</p>
+                  <p className="text-gray-400 text-sm" style={{ marginTop: 'var(--space-1)' }}>魔法正在发生，请稍候</p>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">生成进度</span>
-                  <span className="text-sm font-bold text-violet-600">
+                  <span className="text-sm font-medium text-gray-300">生成进度</span>
+                  <span className="text-sm font-bold rainbow-text">
                     {completedCount}/{totalCount} 张完成
                   </span>
                 </div>
@@ -246,7 +266,7 @@ function ProjectDetailPage() {
                   }}
                 />
                 {progress && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500 pt-2">
+                  <div className="flex items-center justify-center text-xs text-gray-500" style={{ gap: 'var(--space-2)', paddingTop: 'var(--space-2)' }}>
                     <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span>实时同步 · 最新更新：{new Date(progress.timestamp).toLocaleTimeString()}</span>
                   </div>
@@ -257,28 +277,37 @@ function ProjectDetailPage() {
         )}
 
         {isCompleted && (
-          <div className="mb-8 space-y-6 animate-fade-in">
+          <div className="animate-fade-in" style={{ marginBottom: 'var(--space-12)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
             {/* Success Header */}
-            <Card className="glass-card border-0 shadow-xl overflow-hidden">
-              <CardBody className="p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
-                    <span className="text-white text-3xl">🎉</span>
+            <Card className="border-0 shadow-xl overflow-hidden" style={{
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: '1px solid var(--color-grid-line)'
+            }}>
+              <CardBody style={{ padding: 'var(--space-8)' }}>
+                <div className="flex items-center mb-6" style={{ gap: 'var(--space-3)' }}>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-2xl">🎉</span>
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-bold rainbow-text">
                       创作完成！
-                    </h1>
-                    <p className="text-gray-600 text-sm mt-1">你的专属表情包已经准备好了</p>
+                    </h2>
+                    <p className="text-gray-400 text-sm" style={{ marginTop: 'var(--space-1)' }}>你的专属表情包已经准备好了</p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-wrap" style={{ gap: 'var(--space-3)' }}>
                   <Button
                     color="secondary"
-                    size="lg"
+                    size="md"
                     className="shadow-lg hover:shadow-xl transition-shadow"
+                    style={{
+                      paddingLeft: 'var(--space-5)',
+                      paddingRight: 'var(--space-5)',
+                      paddingTop: 'var(--space-3)',
+                      paddingBottom: 'var(--space-3)'
+                    }}
                     onPress={() => {
                       navigate({
                         to: '/',
@@ -290,7 +319,7 @@ function ProjectDetailPage() {
                       })
                     }}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                       <span>🔄</span>
                       <span>Remix 这个项目</span>
                     </span>
@@ -298,11 +327,18 @@ function ProjectDetailPage() {
 
                   <Button
                     color="secondary"
-                    size="lg"
+                    size="md"
                     variant="flat"
+                    className="transition-shadow"
+                    style={{
+                      paddingLeft: 'var(--space-5)',
+                      paddingRight: 'var(--space-5)',
+                      paddingTop: 'var(--space-3)',
+                      paddingBottom: 'var(--space-3)'
+                    }}
                     onPress={handleShare}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                       <span>🔗</span>
                       <span>分享作品</span>
                     </span>
@@ -311,17 +347,23 @@ function ProjectDetailPage() {
                   <Button
                     onClick={handleDownloadAll}
                     isLoading={isDownloading}
-                    size="lg"
+                    size="md"
                     color="primary"
                     className="shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 transition-all"
+                    style={{
+                      paddingLeft: 'var(--space-5)',
+                      paddingRight: 'var(--space-5)',
+                      paddingTop: 'var(--space-3)',
+                      paddingBottom: 'var(--space-3)'
+                    }}
                   >
                     {isDownloading ? (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                         <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         打包中 {downloadProgress.current}/{downloadProgress.total}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                         <span>📦</span>
                         <span>下载全部 ZIP</span>
                       </span>
@@ -332,16 +374,22 @@ function ProjectDetailPage() {
             </Card>
 
             {/* Frame Style Selector */}
-            <Card className="glass-card border-0 shadow-lg">
-              <CardBody className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white text-lg">🖼️</span>
+            <Card className="border-0 shadow-xl" style={{
+              background: 'rgba(0, 0, 0, 0.5)',
+              border: '1px solid var(--color-grid-line)'
+            }}>
+              <CardBody style={{ padding: 'var(--space-8)' }}>
+                <div className="flex items-center mb-6" style={{ gap: 'var(--space-3)' }}>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-2xl">🖼️</span>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900">相框样式</h3>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">相框样式</h2>
+                    <p className="text-gray-400 text-sm" style={{ marginTop: 'var(--space-1)' }}>为你的表情包添加精美边框</p>
+                  </div>
                 </div>
 
-                <div className="flex gap-2 flex-wrap mb-4">
+                <div className="flex flex-wrap" style={{ gap: 'var(--space-3)' }}>
                   {[
                     { id: 'none', label: '无边框', icon: '⭕' },
                     { id: 'white-border', label: '白色描边', icon: '⬜' },
@@ -351,13 +399,19 @@ function ProjectDetailPage() {
                   ].map((style) => (
                     <Button
                       key={style.id}
-                      size="sm"
+                      size="md"
                       variant={frameStyle === style.id ? 'solid' : 'flat'}
                       color={frameStyle === style.id ? 'primary' : 'default'}
                       onPress={() => setFrameStyle(style.id as FrameStyle)}
                       className="transition-all"
+                      style={{
+                        paddingLeft: 'var(--space-5)',
+                        paddingRight: 'var(--space-5)',
+                        paddingTop: 'var(--space-3)',
+                        paddingBottom: 'var(--space-3)'
+                      }}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center" style={{ gap: 'var(--space-2)' }}>
                         <span>{style.icon}</span>
                         <span>{style.label}</span>
                       </span>
@@ -367,7 +421,11 @@ function ProjectDetailPage() {
 
                 {/* Advanced Frame Editor */}
                 {frameStyle === 'custom' && (
-                  <div className="pt-4 border-t border-gray-100">
+                  <div className="border-t" style={{
+                    borderColor: 'var(--color-grid-line)',
+                    marginTop: 'var(--space-6)',
+                    paddingTop: 'var(--space-6)'
+                  }}>
                     <AdvancedFrameEditor
                       config={frameConfig}
                       onChange={setFrameConfig}
@@ -379,16 +437,19 @@ function ProjectDetailPage() {
           </div>
         )}
 
-        <div className="space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
           {/* Emotion Images Section */}
-          <Card className="glass-card border-0 shadow-lg">
-            <CardBody className="p-6 sm:p-8">
+          <Card className="border-0 shadow-lg" style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            border: '1px solid var(--color-grid-line)'
+          }}>
+            <CardBody style={{ padding: 'clamp(var(--space-6), 4vw, var(--space-8))' }}>
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                     <span className="text-white text-xl">😊</span>
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900">九宫格情绪表情</h2>
+                  <h2 className="text-2xl font-bold text-white">九宫格情绪表情</h2>
                 </div>
                 {failedImageArray.length > 0 && (
                   <Button
@@ -410,7 +471,7 @@ function ProjectDetailPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-3" style={{ gap: 'clamp(var(--space-4), 2vw, var(--space-6))' }}>
                 {emotionImageArray.map((image) => (
                   <ImageCard
                     key={image.id}
@@ -427,16 +488,19 @@ function ProjectDetailPage() {
 
           {/* Surprise images - Phase 2 */}
           {surpriseImageArray.length > 0 && (
-            <Card className="glass-card border-0 shadow-lg">
-              <CardBody className="p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6">
+            <Card className="border-0 shadow-lg" style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: '1px solid var(--color-grid-line)'
+            }}>
+              <CardBody style={{ padding: 'clamp(var(--space-6), 4vw, var(--space-8))' }}>
+                <div className="flex items-center mb-6" style={{ gap: 'var(--space-3)' }}>
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
                     <span className="text-white text-xl">✨</span>
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900">意外惊喜表情</h2>
+                  <h2 className="text-2xl font-bold text-white">意外惊喜表情</h2>
                 </div>
 
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 sm:gap-4 overflow-x-auto surprise-row">
+                <div className="grid grid-cols-4 sm:grid-cols-7 overflow-x-auto surprise-row" style={{ gap: 'clamp(var(--space-3), 1.5vw, var(--space-4))' }}>
                   {surpriseImageArray.map((image) => (
                     <ImageCard
                       key={image.id}
@@ -464,32 +528,39 @@ function ProjectDetailPage() {
         )}
 
         {/* Share Modal */}
-        <Modal isOpen={showShareModal} onClose={() => setShowShareModal(false)}>
+        <Modal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          classNames={{
+            base: "bg-black border border-gray-800",
+            backdrop: "bg-black/50"
+          }}
+        >
           <ModalContent>
-            <ModalBody className="p-6">
-              <h3 className="text-xl font-bold mb-4">分享这个项目</h3>
+            <ModalBody style={{ padding: 'var(--space-6)', background: 'rgba(0, 0, 0, 0.95)' }}>
+              <h3 className="text-xl font-bold mb-4 text-white">分享这个项目</h3>
 
               {/* QR Code */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center" style={{ marginBottom: 'var(--space-4)' }}>
                 {qrCodeUrl && (
                   <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                 )}
               </div>
 
               {/* Share URL */}
-              <div className="flex gap-2">
+              <div className="flex" style={{ gap: 'var(--space-2)' }}>
                 <input
                   type="text"
                   value={shareUrl}
                   readOnly
-                  className="flex-1 px-3 py-2 border rounded"
+                  className="flex-1 px-3 py-2 border rounded bg-black/50 border-gray-700 text-white"
                 />
                 <Button color="primary" onPress={handleCopyLink}>
                   复制链接
                 </Button>
               </div>
 
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-sm text-gray-400" style={{ marginTop: 'var(--space-4)' }}>
                 任何人通过此链接都可以查看你的作品
               </p>
             </ModalBody>
@@ -684,9 +755,12 @@ function ImageCard({
 
   if (image.status === 'PENDING') {
     return (
-      <Card className="aspect-square border-0 shadow-md">
-        <CardBody className="flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-          <div className="text-gray-400 text-center">
+      <Card className="aspect-square border-0 shadow-md" style={{
+        background: 'rgba(0, 0, 0, 0.3)',
+        border: '1px solid var(--color-grid-line)'
+      }}>
+        <CardBody className="flex items-center justify-center">
+          <div className="text-gray-500 text-center">
             <svg
               className="w-12 h-12 mx-auto mb-2 animate-pulse"
               fill="none"
@@ -709,9 +783,12 @@ function ImageCard({
 
   if (image.status === 'GENERATING') {
     return (
-      <Card className="aspect-square border-0 shadow-md overflow-hidden">
-        <CardBody className="flex items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{
+      <Card className="aspect-square border-0 shadow-md overflow-hidden" style={{
+        background: 'rgba(0, 0, 0, 0.3)',
+        border: '1px solid var(--color-grid-line)'
+      }}>
+        <CardBody className="flex items-center justify-center relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" style={{
             backgroundSize: '200% 100%',
             animation: 'shimmer 2s infinite',
           }} />
@@ -723,14 +800,20 @@ function ImageCard({
 
   if (image.status === 'FAILED') {
     return (
-      <Card className="aspect-square border-2 border-red-200 shadow-md">
-        <CardBody className="flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-rose-50 p-4">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
-            <span className="text-red-500 text-2xl">⚠️</span>
+      <Card className="aspect-square shadow-md" style={{
+        background: 'rgba(0, 0, 0, 0.5)',
+        border: '2px solid rgba(239, 68, 68, 0.5)'
+      }}>
+        <CardBody className="flex flex-col items-center justify-center" style={{ padding: 'var(--space-4)' }}>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{
+            marginBottom: 'var(--space-3)',
+            background: 'rgba(239, 68, 68, 0.2)'
+          }}>
+            <span className="text-red-400 text-2xl">⚠️</span>
           </div>
-          <p className="text-red-600 text-sm font-semibold mb-2 text-center">生成失败</p>
+          <p className="text-red-400 text-sm font-semibold text-center" style={{ marginBottom: 'var(--space-2)' }}>生成失败</p>
           {image.errorMessage && (
-            <p className="text-xs text-red-500/80 mb-3 text-center line-clamp-2">
+            <p className="text-xs text-red-300/70 text-center line-clamp-2" style={{ marginBottom: 'var(--space-3)' }}>
               {image.errorMessage}
             </p>
           )}
@@ -740,7 +823,7 @@ function ImageCard({
             variant="flat"
             onPress={() => retryMutation.mutate(image.id)}
             isLoading={retryMutation.isPending}
-            className="mt-2"
+            style={{ marginTop: 'var(--space-2)' }}
           >
             🔄 重试
           </Button>
@@ -756,7 +839,11 @@ function ImageCard({
     <Card
       isPressable
       onPress={onPress || handleDownload}
-      className="aspect-square overflow-hidden group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-300"
+      className="aspect-square overflow-hidden group cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
+      style={{
+        background: 'rgba(0, 0, 0, 0.5)',
+        border: '1px solid var(--color-grid-line)'
+      }}
     >
       <CardBody className="p-0 relative">
         {shouldUseCanvas ? (
@@ -777,7 +864,7 @@ function ImageCard({
 
         {/* Label */}
         {!compact && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300" style={{ padding: 'var(--space-4)' }}>
             <p className="text-white text-base font-semibold text-center drop-shadow-lg">
               {image.emotionType ? EMOTION_LABELS[image.emotionType] || image.emotionType : ''}
             </p>
@@ -785,7 +872,7 @@ function ImageCard({
         )}
 
         {/* Download hint on hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ top: 'var(--space-2)', right: 'var(--space-2)' }}>
           <div className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
             <span className="text-sm">📥</span>
           </div>

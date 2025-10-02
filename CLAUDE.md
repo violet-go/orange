@@ -120,3 +120,45 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## Project Notes
+
+### Style Presets - 风格预设 [2025-10-02]
+
+**问题**: 主页只显示"默认风格"，缺少预设风格选项
+**原因**: `styles` 表为空，数据库 schema 存在但未插入初始数据
+**解决**: 创建 `base/db/seed-styles.ts` 脚本插入 6 个预设风格
+  - 可爱卡通 (cute-cartoon)
+  - 日系动漫 (anime)
+  - 3D立体 (3d-render)
+  - 水彩画 (watercolor)
+  - 像素艺术 (pixel-art)
+  - 简笔画 (line-art)
+
+**使用方式**: `bun run seed:styles` 或 `bun run base/db/seed-styles.ts`
+**架构流程**: Frontend StylePicker → GraphQL `styles` query → `db.getActiveStyles()` → SQLite `styles` table
+
+### Prompt 组合优化 [2025-10-02]
+
+**问题**: Prompt 组合顺序不合理，风格模板在前，用户描述在后
+**原因**: `core/gen/proc.ts:42` 中使用 `${style.promptTemplate}, ${params.inputContent}`
+**影响**: AI 模型对前面的词汇赋予更高权重，导致风格优先于主体描述
+**修复**: 调整为 `${params.inputContent}, ${style.promptTemplate}`
+**最佳实践**: 主体描述 → 风格修饰 → 情绪/场景细节
+
+**Prompt 组合流程**:
+1. GenService: `用户描述 + 风格模板` → basePrompt
+2. PromptBuilder: `basePrompt + 情绪模板` → 9 个情绪 prompt
+3. PromptBuilder: `basePrompt + 场景模板` → 7 个惊喜 prompt
+
+### ShowCase 示例功能 [2025-10-02]
+
+**需求**: 小白用户不想打字，需要一键开始创作
+**实现**: 创建 `app/src/components/ShowcaseExamples.tsx`
+**功能**: 12 个预设角色描述，点击自动填充到输入框
+**分类**:
+  - 可爱动物系列（橘猫、柴犬、熊猫、兔子）
+  - 职业角色系列（程序员、厨师、画家）
+  - 幻想生物系列（小龙、独角兽）
+  - 食物拟人化系列（饺子、奶茶、寿司）
+**交互**: 点击卡片 → 自动填充描述 → 自动聚焦输入框 → 平滑滚动到输入区域

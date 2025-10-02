@@ -39,7 +39,8 @@ export function createGenService(deps: GenServiceDeps): GenService {
       if (params.styleId) {
         const style = deps.db.getStyle(params.styleId)
         if (style) {
-          basePrompt = `${style.promptTemplate}, ${params.inputContent}`
+          // User description first, then style template (better prompt engineering)
+          basePrompt = `${params.inputContent}, ${style.promptTemplate}`
         }
       }
       if (params.customPrompt) {

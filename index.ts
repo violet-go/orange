@@ -96,6 +96,22 @@ logger.info('✅ GraphQL Yoga configured')
 
 const app = new Hono()
 
+// CORS middleware - Allow frontend to access backend
+app.use('/*', async (c, next) => {
+  // When credentials: true, origin cannot be wildcard
+  const origin = c.req.header('origin') || 'http://localhost:5173'
+  c.header('Access-Control-Allow-Origin', origin)
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  c.header('Access-Control-Allow-Credentials', 'true')
+
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204)
+  }
+
+  await next()
+})
+
 // Health check endpoint
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
@@ -121,7 +137,7 @@ app.get('/data/images/*', async (c) => {
     const requestPath = c.req.path // e.g., "/data/images/proj-123/img-456.png"
     const filePath = requestPath.replace('/data/', '') // "images/proj-123/img-456.png"
 
-    logger.debug('Serving static file', { filePath })
+    logger.debug('Serving static file', { requestPath, filePath })
 
     // Check if file exists
     const exists = await storage.exists(filePath)
@@ -133,13 +149,13 @@ app.get('/data/images/*', async (c) => {
     // Read file
     const buffer = await storage.read(filePath)
 
-    // Return with appropriate Content-Type
-    return new Response(buffer, {
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
-      }
-    })
+    logger.debug('File read successfully', { filePath, bufferSize: buffer.length })
+
+    // Return with appropriate Content-Type using Hono's body method
+    c.header('Content-Type', 'image/png')
+    c.header('Cache-Control', 'public, max-age=31536000')
+    c.header('Content-Length', String(buffer.length))
+    return c.body(buffer)
   } catch (error) {
     logger.error('Error serving static file', error as Error)
     return c.text('Internal server error', 500)

@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run index.ts",
+    "seed:styles": "bun run base/db/seed-styles.ts",
     "test": "bun test",
     "test:phase1": "bun test test/phase1.test.ts",
     "test:phase2": "bun test test/phase2.test.ts",

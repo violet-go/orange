@@ -12,6 +12,18 @@
 
 ---
 
+## 🎬 产品演示
+
+<div align="center">
+
+https://github.com/violet-go/orange/releases/download/v1.0.0/Showcase.mov
+
+**90 秒看懂整个流程** | 从输入到生成 | 完整体验展示
+
+</div>
+
+---
+
 ## 起源
 
 一个为了特定目的, 尝试在72小时之内进行极限开发一款完整前后端的生图产品的挑战尝试

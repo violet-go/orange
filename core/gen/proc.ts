@@ -34,13 +34,37 @@ export function createGenService(deps: GenServiceDeps): GenService {
         status: 'pending'
       })
 
-      // 2. Construct base prompt
-      let basePrompt = params.inputContent
+      // 2. Parse input content based on input type
+      let textPrompt = params.inputContent
+      let inputImage: { base64Data: string; mimeType: string } | undefined
+
+      if (params.inputType === 'image' || params.inputType === 'mixed') {
+        try {
+          // Parse JSON format: { text?: string, base64Data: string, mimeType: string }
+          const parsed = JSON.parse(params.inputContent)
+          inputImage = {
+            base64Data: parsed.base64Data,
+            mimeType: parsed.mimeType
+          }
+          textPrompt = parsed.text || 'Transform this image' // Default prompt if no text
+          deps.logger.info('Parsed image input', {
+            mimeType: inputImage.mimeType,
+            hasText: !!parsed.text,
+            dataLength: inputImage.base64Data.length
+          })
+        } catch (error) {
+          deps.logger.error('Failed to parse image input', error)
+          throw new Error('Invalid image input format - expected JSON with base64Data and mimeType')
+        }
+      }
+
+      // 3. Construct base prompt
+      let basePrompt = textPrompt
       if (params.styleId) {
         const style = deps.db.getStyle(params.styleId)
         if (style) {
           // User description first, then style template (better prompt engineering)
-          basePrompt = `${params.inputContent}, ${style.promptTemplate}`
+          basePrompt = `${textPrompt}, ${style.promptTemplate}`
         }
       }
       if (params.customPrompt) {
@@ -95,7 +119,7 @@ export function createGenService(deps: GenServiceDeps): GenService {
       const imageRecordArray = [...emotionImageRecordArray, ...surpriseImageRecordArray]
 
       // 7. Start async generation (don't await)
-      generateAsync(projectId, imageRecordArray, deps)
+      generateAsync(projectId, imageRecordArray, inputImage, deps)
 
       // 8. Return projectId immediately
       return projectId
@@ -106,6 +130,7 @@ export function createGenService(deps: GenServiceDeps): GenService {
 async function generateAsync(
   projectId: string,
   imageRecordArray: Array<{ imageId: string; prompt: string; seed: number }>,
+  inputImage: { base64Data: string; mimeType: string } | undefined,
   deps: GenServiceDeps
 ) {
   const logger = deps.logger.child('generate-async')
@@ -124,7 +149,7 @@ async function generateAsync(
   // Concurrent generation with retry logic
   await Promise.allSettled(
     imageRecordArray.map(async (record) => {
-      await generateSingleImage(record, projectId, deps, logger)
+      await generateSingleImage(record, projectId, inputImage, deps, logger)
     })
   )
 
@@ -154,6 +179,7 @@ async function generateAsync(
 async function generateSingleImage(
   record: { imageId: string; prompt: string; seed: number },
   projectId: string,
+  inputImage: { base64Data: string; mimeType: string } | undefined,
   deps: GenServiceDeps,
   logger: Logger
 ) {
@@ -165,7 +191,11 @@ async function generateSingleImage(
     // Call image generation
     const result = await deps.imageGen.generate({
       prompt: record.prompt,
-      seed: record.seed
+      seed: record.seed,
+      inputImage: inputImage ? {
+        mimeType: inputImage.mimeType,
+        base64Data: inputImage.base64Data
+      } : undefined
     })
 
     // Save image to filesystem
@@ -203,7 +233,11 @@ async function generateSingleImage(
       try {
         const retryResult = await deps.imageGen.generate({
           prompt: record.prompt,
-          seed: record.seed + 1000 // Different seed
+          seed: record.seed + 1000, // Different seed
+          inputImage: inputImage ? {
+            mimeType: inputImage.mimeType,
+            base64Data: inputImage.base64Data
+          } : undefined
         })
 
         await deps.storage.save(

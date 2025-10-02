@@ -5,6 +5,7 @@ import { graphqlClient } from '../lib/graphql/client'
 import { CREATE_PROJECT_MUTATION } from '../lib/graphql/mutations'
 import { StylePicker } from '../components/StylePicker'
 import { ShowcaseExamples } from '../components/ShowcaseExamples'
+import { ImageUpload } from '../components/ImageUpload'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -40,6 +41,10 @@ function HomePage() {
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(
     search.styleId || null
   )
+  const [uploadedImage, setUploadedImage] = useState<{
+    base64Data: string
+    mimeType: string
+  } | null>(null)
   const navigate = useNavigate()
 
   const isRemix = !!search.remix
@@ -73,11 +78,37 @@ function HomePage() {
   })
 
   const handleGenerate = () => {
-    if (!description.trim()) return
+    // Validate: need either description or image
+    if (!description.trim() && !uploadedImage) return
+
+    // Determine input type and content
+    let inputType: string
+    let inputContent: string
+
+    if (uploadedImage && description.trim()) {
+      // Both image and text - MIXED mode
+      inputType = 'MIXED'
+      inputContent = JSON.stringify({
+        text: description,
+        base64Data: uploadedImage.base64Data,
+        mimeType: uploadedImage.mimeType
+      })
+    } else if (uploadedImage) {
+      // Only image - IMAGE mode
+      inputType = 'IMAGE'
+      inputContent = JSON.stringify({
+        base64Data: uploadedImage.base64Data,
+        mimeType: uploadedImage.mimeType
+      })
+    } else {
+      // Only text - TEXT mode (existing behavior)
+      inputType = 'TEXT'
+      inputContent = description
+    }
 
     createProject.mutate({
-      inputType: 'TEXT',
-      inputContent: description,
+      inputType,
+      inputContent,
       styleId: selectedStyleId,
       remixFromId: search.remix || null,
     })
@@ -87,6 +118,7 @@ function HomePage() {
     navigate({ to: '/', search: {} })
     setDescription('')
     setSelectedStyleId(null)
+    setUploadedImage(null)
   }
 
   return (
@@ -106,14 +138,15 @@ function HomePage() {
       </div>
 
       {/* Hero Section - 添加顶部内边距避让导航栏 */}
-      <main className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20" style={{
+      <main className="relative min-h-screen flex flex-col items-center pb-20" style={{
+        paddingTop: '180px',
         paddingLeft: 'clamp(var(--space-4), 4vw, var(--space-12))',
         paddingRight: 'clamp(var(--space-4), 4vw, var(--space-12))'
       }}>
         {/* Hero Content */}
-        <div className="text-center max-w-4xl mx-auto mb-12 animate-slide-up">
+        <div className="text-center max-w-4xl mx-auto mb-12 animate-slide-up" style={{ marginTop: '40px' }}>
           {/* Hero Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full relative" style={{
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full relative" style={{
             background: 'rgba(0, 0, 0, 0.8)',
             border: '2px solid transparent'
           }}>
@@ -129,21 +162,21 @@ function HomePage() {
           </div>
 
           {/* Main Title */}
-          <h1 className="mb-4" style={{
+          <h1 className="mb-6" style={{
             fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
             fontWeight: 700,
-            lineHeight: 1.1
+            lineHeight: 1.2
           }}>
-            <span className="block text-white mb-2">
+            <span className="block text-white mb-3">
               {isRemix ? '基于现有作品探索' : 'Create the work solution of'}
             </span>
-            <span className="block text-white mb-2">
+            <span className="block text-white">
               {isRemix ? '无限创意可能用' : 'your dreams with'} <span className="rainbow-text">AI</span>
             </span>
           </h1>
 
           {/* Subtitle - 增加底部间距到 var(--space-16) = 64px */}
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-light" style={{ marginBottom: 'var(--space-16)' }}>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-light" style={{ marginBottom: '48px' }}>
             {isRemix
               ? '一句话描述，AI 为你生成全新表情包'
               : 'Use AI to create whatever you need for your sticker pack in seconds'}
@@ -151,36 +184,63 @@ function HomePage() {
 
           {/* Input Container with Rainbow Ring - 优化结构和间距 */}
           <div className="relative max-w-3xl mx-auto" style={{ marginBottom: 'var(--space-12)' }}>
+            {/* Image Upload Area - 独立在外层 */}
+            {uploadedImage && (
+              <div style={{ marginBottom: 'var(--space-4)' }}>
+                <ImageUpload
+                  onImageSelect={setUploadedImage}
+                  disabled={createProject.isPending}
+                />
+              </div>
+            )}
+
             <div className="input-wrapper">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="例如：一只可爱的橘猫，圆圆的大眼睛，粉色的小鼻子，戴着蓝色围巾..."
-                className="main-input"
-                rows={3}
-                autoFocus
-              />
-              <div className="input-actions">
-                <button
-                  onClick={handleGenerate}
-                  disabled={!description.trim() || createProject.isPending}
-                  className="magic-button"
-                >
-                  <span className="magic-button-shimmer"></span>
-                  {createProject.isPending ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      <span>Creating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Create with magic</span>
-                      <span className="magic-sparkle">✨</span>
-                    </>
-                  )}
-                </button>
+              {/* Textarea + Button 容器 - 保持相对定位 */}
+              <div style={{ position: 'relative' }}>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={
+                    uploadedImage
+                      ? "描述你想如何改变这张图片（可选）..."
+                      : "例如：一只可爱的橘猫，圆圆的大眼睛，粉色的小鼻子，戴着蓝色围巾..."
+                  }
+                  className="main-input"
+                  rows={3}
+                  autoFocus={!uploadedImage}
+                />
+                <div className="input-actions">
+                  <button
+                    onClick={handleGenerate}
+                    disabled={(!description.trim() && !uploadedImage) || createProject.isPending}
+                    className="magic-button"
+                  >
+                    <span className="magic-button-shimmer"></span>
+                    {createProject.isPending ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Create with magic</span>
+                        <span className="magic-sparkle">✨</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Image Upload Trigger - 无图片时显示 */}
+            {!uploadedImage && (
+              <div style={{ marginTop: 'var(--space-4)' }}>
+                <ImageUpload
+                  onImageSelect={setUploadedImage}
+                  disabled={createProject.isPending}
+                />
+              </div>
+            )}
           </div>
 
           {/* Style Picker Section - Compact */}
@@ -268,9 +328,9 @@ function HomePage() {
         </div>
 
         {/* Footer Text */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-center z-10 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <div className="text-center mt-auto pt-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <p className="text-gray-600 text-xs opacity-80">
-            Powered by nano banana model · 已服务 2K+ 创作者
+            Powered by nano banana model
           </p>
         </div>
       </main>

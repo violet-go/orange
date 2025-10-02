@@ -162,3 +162,27 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
   - 幻想生物系列（小龙、独角兽）
   - 食物拟人化系列（饺子、奶茶、寿司）
 **交互**: 点击卡片 → 自动填充描述 → 自动聚焦输入框 → 平滑滚动到输入区域
+
+### Image Upload Support - 图片上传支持 [2025-01-XX]
+
+**需求**: 支持用户上传图片作为输入，实现 Image-to-Image 和 Text+Image-to-Image 生成
+**底层 API**: Gemini 2.5 Flash Image Preview 原生支持图片输入（最多 3 张）
+**实现层次**:
+  - **类型定义** (`core/image/type.ts`): 添加 `inputImage?: { mimeType, base64Data }` 到 `ImageGenParams`
+  - **API 调用** (`core/image/proc.ts`): 修改 `createRealImageGen`，将图片作为 `inline_data` 添加到请求 parts
+  - **业务逻辑** (`core/gen/proc.ts`): 解析 `inputContent` JSON，提取图片数据，传递给所有 16 张图片生成
+  - **前端组件** (`app/src/components/ImageUpload.tsx`): 拖拽/点击上传，base64 编码，预览显示
+  - **主页集成** (`app/src/routes/index.tsx`): 根据有无图片/文本自动切换 TEXT/IMAGE/MIXED 模式
+
+**数据流**:
+1. Frontend: File → base64 + mimeType → state
+2. GraphQL: `inputContent` = JSON.stringify({ text?, base64Data, mimeType })
+3. GenService: Parse JSON → extract inputImage → pass to all 16 images
+4. ImageGen: Build parts array → [inline_data, text] → Gemini API
+
+**输入类型语义**:
+- `TEXT`: inputContent = 纯文本描述
+- `IMAGE`: inputContent = JSON `{ base64Data, mimeType }`
+- `MIXED`: inputContent = JSON `{ text, base64Data, mimeType }`
+
+**向后兼容**: TEXT 模式行为完全不变，IMAGE/MIXED 为新增功能

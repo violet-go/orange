@@ -74,7 +74,27 @@ export function createRealImageGen(config: RealImageGenConfig): ImageGen {
       })
 
       try {
-        // Step 1: Call Gemini API
+        // Step 1: Build request parts array
+        const requestPartArray: any[] = []
+
+        // Add input image first if provided (image-to-image mode)
+        if (params.inputImage) {
+          requestPartArray.push({
+            inline_data: {
+              mime_type: params.inputImage.mimeType,
+              data: params.inputImage.base64Data
+            }
+          })
+          logger.debug('Including input image in request', {
+            mimeType: params.inputImage.mimeType,
+            dataLength: params.inputImage.base64Data.length
+          })
+        }
+
+        // Add text prompt
+        requestPartArray.push({ text: params.prompt })
+
+        // Step 2: Call Gemini API
         // Endpoint: /v1beta/models/gemini-2.5-flash-image-preview:generateContent
         const response = await fetch(`${baseUrl}/v1beta/models/gemini-2.5-flash-image-preview:generateContent`, {
           method: 'POST',
@@ -84,9 +104,7 @@ export function createRealImageGen(config: RealImageGenConfig): ImageGen {
           },
           body: JSON.stringify({
             contents: [{
-              parts: [
-                { text: params.prompt }
-              ]
+              parts: requestPartArray
             }]
           }),
           // Disable TLS certificate verification for relay API

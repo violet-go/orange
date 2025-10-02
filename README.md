@@ -16,9 +16,11 @@
 
 <div align="center">
 
-https://github.com/violet-go/orange/releases/download/v1.0.0/Showcase.mov
+<video src="https://github.com/violet-go/orange/releases/download/v1.0.0/Showcase.mov" controls width="100%" style="max-width: 800px;"></video>
 
 **90 秒看懂整个流程** | 从输入到生成 | 完整体验展示
+
+_如果视频无法播放，[点击此处下载观看](https://github.com/violet-go/orange/releases/download/v1.0.0/Showcase.mov)_
 
 </div>
 
